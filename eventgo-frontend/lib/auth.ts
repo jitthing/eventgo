@@ -12,15 +12,18 @@ export async function loginUser(email: string, password: string) {
 }
 
 export async function registerUser(email: string, password: string) {
-  const response = await fetch(`${AUTH_API_URL}/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-
-  if (!response.ok) throw new Error("Registration failed");
-  return response.json();
-}
+    const response = await fetch(`${AUTH_API_URL}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+  
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Registration failed");
+    }
+    return response.json(); // Returns { id, email }
+  }
 
 export async function fetchUser(token: string) {
   const response = await fetch(`${AUTH_API_URL}/me`, {
