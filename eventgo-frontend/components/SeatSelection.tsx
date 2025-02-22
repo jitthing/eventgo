@@ -12,7 +12,7 @@ export default function SeatSelection({ capacity, eventId }: { capacity: number;
 
 	return (
 		<div className="mt-6 p-6 bg-gray-100 rounded-lg">
-			<h3 className="text-lg font-semibold mb-4">🎟️ Select Your Seats</h3>
+			<h3 className="text-lg text-black font-semibold mb-4">🎟️ Select Your Seats</h3>
 			<div className="grid grid-cols-10 gap-2">
 				{Array.from({ length: Math.min(capacity, 50) }, (_, i) => i + 1).map((seat) => (
 					<button key={seat} className={`w-10 h-10 text-sm font-medium rounded-md ${selectedSeats.includes(seat) ? "bg-blue-600 text-white" : "bg-gray-300 hover:bg-gray-400"}`} onClick={() => toggleSeat(seat)}>
