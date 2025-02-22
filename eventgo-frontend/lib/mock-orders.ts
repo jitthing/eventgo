@@ -21,7 +21,7 @@ export const mockOrders = [
   },
 ];
 
-export async function getUserOrders() {
+export async function getUserOrders(): Promise<any[]> {
   return new Promise((resolve) => {
     setTimeout(() => resolve(mockOrders), 500); // Simulate API delay
   });
