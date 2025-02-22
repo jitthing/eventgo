@@ -15,6 +15,7 @@ from .dependencies import (
 )
 from . import models, schemas
 from .database import engine
+from .token_blacklist import is_token_blacklisted, add_to_blacklist
 
 app = FastAPI(title="Auth Service")
 
@@ -85,16 +86,25 @@ async def read_users_me(current_user: models.User = Depends(get_current_user)):
     return current_user
 
 
+@app.post("/logout")
+async def logout(token: str):
+    """Invalidate a JWT token."""
+    add_to_blacklist(token)
+    return {"message": "Successfully logged out"}
+
+
 @app.post("/validate-token")
 async def validate_token(token: str, db: Session = Depends(get_db)):
-    from jose import JWTError, jwt
-    from .dependencies import SECRET_KEY, ALGORITHM
+    """Validate token & check if blacklisted"""
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid token",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if is_token_blacklisted(token):
+        raise credentials_exception
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
