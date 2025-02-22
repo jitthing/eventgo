@@ -2,13 +2,16 @@ from pydantic import BaseModel
 from datetime import datetime
 from .models import TicketStatus
 
+
 class TicketBase(BaseModel):
     event_id: int
     price: float
     status: TicketStatus = TicketStatus.AVAILABLE
 
+
 class TicketCreate(TicketBase):
     pass
+
 
 class TicketResponse(TicketBase):
     id: int
@@ -16,4 +19,4 @@ class TicketResponse(TicketBase):
     updated_at: datetime | None = None
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
