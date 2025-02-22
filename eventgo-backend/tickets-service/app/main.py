@@ -7,7 +7,7 @@ from .database import engine, get_db
 from .dependencies import get_current_user  # updated import
 from datetime import datetime
 
-app = FastAPI(title="Tickets Service")  # rename the title
+app = FastAPI(title="Tickets Service")
 
 # Add CORS middleware
 app.add_middleware(
@@ -20,7 +20,6 @@ app.add_middleware(
 
 # Initialize database
 models.Base.metadata.create_all(bind=engine)
-
 
 from sqlalchemy.sql import text
 
@@ -48,6 +47,13 @@ async def get_ticket(ticket_id: int, db: Session = Depends(get_db)):
     return ticket
 
 
+# New endpoint to get tickets for a specific event
+@app.get("/events/{event_id}/tickets", response_model=List[schemas.TicketResponse])
+async def get_tickets_for_event(event_id: int, db: Session = Depends(get_db)):
+    tickets = db.query(models.Ticket).filter(models.Ticket.event_id == event_id).all()
+    return tickets
+
+
 @app.post("/tickets", response_model=schemas.TicketResponse)
 async def create_ticket(ticket: schemas.TicketCreate, db: Session = Depends(get_db)):
     db_ticket = models.Ticket(**ticket.dict())
@@ -63,7 +69,6 @@ async def purchase_ticket(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    ...
     ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
     if ticket is None:
         raise HTTPException(status_code=404, detail="Ticket not found")
