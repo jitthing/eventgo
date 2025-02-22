@@ -72,6 +72,8 @@ services:
         depends_on:
             tickets-db:
                 condition: service_healthy
+            events-service: # Ensure Events service starts before Tickets service
+                condition: service_started
         restart: always
 
     tickets-db:
