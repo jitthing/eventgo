@@ -1,73 +1,93 @@
-version: "3.8"
-
 services:
+    # --------------------------------------------------------------------------
+    # AUTH SERVICE
+    # --------------------------------------------------------------------------
     auth-service:
+        container_name: auth-service
         build: ./auth-service
         ports:
             - "8001:8000"
-        environment:
-            - DATABASE_URL=postgresql://auth_user:auth_password@auth-db:5432/auth_db
-            - JWT_SECRET_KEY=your_super_secret_key_here
+        env_file:
+            - ./auth-service/.env
         depends_on:
-            - auth-db
+            auth-db:
+                condition: service_healthy
+        restart: always
 
     auth-db:
+        container_name: auth-db
         image: postgres:14-alpine
-        environment:
-            - POSTGRES_USER=auth_user
-            - POSTGRES_PASSWORD=auth_password
-            - POSTGRES_DB=auth_db
+        env_file:
+            - ./auth-service/.env
         volumes:
             - auth-db-data:/var/lib/postgresql/data
         ports:
             - "5432:5432"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
 
+    # --------------------------------------------------------------------------
+    # EVENTS SERVICE
+    # --------------------------------------------------------------------------
     events-service:
+        container_name: events-service
         build: ./events-service
         ports:
             - "8002:8000"
-        environment:
-            - DATABASE_URL=postgresql://events_user:events_password@events-db:5432/events_db
+        env_file:
+            - ./events-service/.env
         depends_on:
             events-db:
                 condition: service_healthy
         restart: always
 
     events-db:
+        container_name: events-db
         image: postgres:14-alpine
-        environment:
-            - POSTGRES_USER=events_user
-            - POSTGRES_PASSWORD=events_password
-            - POSTGRES_DB=events_db
+        env_file:
+            - ./events-service/.env
         volumes:
             - events-db-data:/var/lib/postgresql/data
         ports:
             - "5433:5432"
         healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U events_user -d events_db"]
+            test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
             interval: 5s
             timeout: 5s
             retries: 5
 
+    # --------------------------------------------------------------------------
+    # TICKETS SERVICE
+    # --------------------------------------------------------------------------
     tickets-service:
+        container_name: tickets-service
         build: ./tickets-service
         ports:
             - "8003:8000"
-        environment:
-            - DATABASE_URL=postgresql://tickets_user:tickets_password@tickets-db:5432/tickets_db
+        env_file:
+            - ./tickets-service/.env
         depends_on:
-            - tickets-db
+            tickets-db:
+                condition: service_healthy
+        restart: always
 
     tickets-db:
+        container_name: tickets-db
         image: postgres:14-alpine
-        environment:
-            - POSTGRES_USER=tickets_user
-            - POSTGRES_PASSWORD=tickets_password
-            - POSTGRES_DB=tickets_db
+        env_file:
+            - ./tickets-service/.env
         volumes:
             - tickets-db-data:/var/lib/postgresql/data
         ports:
             - "5434:5432"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
 
 volumes:
     auth-db-data:
