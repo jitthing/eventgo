@@ -1,5 +1,5 @@
-import { eventsAPI } from "../lib/api-client";
-import { formatDate } from "../lib/utils";
+import { getFeaturedEvents } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -24,7 +24,7 @@ function EventsSkeleton() {
 
 // Fetch and display event list
 async function EventsList() {
-	const events = await eventsAPI.getEvents();
+	const events = await getFeaturedEvents();
 
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
