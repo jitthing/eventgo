@@ -1,38 +1,52 @@
-"use client"; // Required for useState & useEffect
+"use client";
 
-import { useState, useEffect } from "react";
-import { getUserProfile } from "@/lib/mock-user";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { fetchUser } from "@/lib/auth";
 import { getUserOrders } from "@/lib/mock-orders";
 import Link from "next/link";
 
 export default function ProfilePage() {
+	const router = useRouter();
 	const [user, setUser] = useState<any>(null);
 	const [orders, setOrders] = useState<any[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
+		const token = localStorage.getItem("token") || ""; // Fix: Ensure token is always a string
+		if (!token) return router.push("/login");
+
 		async function fetchData() {
-			const userData = await getUserProfile();
-			const ordersData = await getUserOrders();
-			setUser(userData);
-			setOrders(ordersData);
-			setLoading(false);
+			try {
+				const userData = await fetchUser(token);
+				const ordersData: any[] = await getUserOrders(); // Fix: Ensure it's an array
+				setUser(userData);
+				setOrders(ordersData);
+				setLoading(false);
+			} catch {
+				router.push("/login");
+			}
 		}
 		fetchData();
-	}, []);
+	}, [router]);
 
 	const upcomingEvents = orders.filter((order) => order.status === "Upcoming");
 	const pastEvents = orders.filter((order) => order.status === "Completed");
+
+	function handleLogout() {
+		localStorage.removeItem("token");
+		router.push("/login");
+	}
 
 	return (
 		<div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
 			<div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8">
 				{/* User Profile Section */}
 				<div className="flex items-center space-x-4">
-					<img src={user?.avatar} alt="Profile Avatar" className="w-16 h-16 rounded-full" />
+					<img src={user?.avatar || "https://api.dicebear.com/6.x/initials/svg?seed=User"} alt="Profile Avatar" className="w-16 h-16 rounded-full" />
 					<div>
-						<h1 className="text-3xl font-bold text-black">{user?.name}</h1>
-						<p className="text-black">{user?.email}</p>
+						<h1 className="text-3xl font-bold text-black">{user?.email}</h1>
+						<p className="text-black">User ID: {user?.id}</p>
 					</div>
 				</div>
 
@@ -112,7 +126,9 @@ export default function ProfilePage() {
 
 				{/* Logout */}
 				<div className="mt-10 text-center">
-					<button className="bg-red-600 text-white py-3 px-6 rounded-md hover:bg-red-700 transition-colors">Log Out</button>
+					<button onClick={handleLogout} className="bg-red-600 text-white py-3 px-6 rounded-md hover:bg-red-700 transition-colors">
+						Log Out
+					</button>
 				</div>
 			</div>
 		</div>
