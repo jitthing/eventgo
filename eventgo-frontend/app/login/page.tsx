@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { loginUser } from "@/lib/auth";
 
@@ -10,14 +10,22 @@ export default function LoginPage() {
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
 
+	useEffect(() => {
+		if (localStorage.getItem("token")) {
+			router.push("/profile"); // Redirect if already logged in
+		}
+	}, [router]);
+
 	async function handleLogin(event: React.FormEvent) {
 		event.preventDefault();
+		setError("");
+
 		try {
 			const { access_token } = await loginUser(email, password);
 			localStorage.setItem("token", access_token);
 			router.push("/profile");
-		} catch (err) {
-			setError("Invalid credentials. Please try again.");
+		} catch (err: any) {
+			setError(err.message || "Failed to login.");
 		}
 	}
 
@@ -33,6 +41,12 @@ export default function LoginPage() {
 						Login
 					</button>
 				</form>
+				<p className="text-black mt-4">
+					Don't have an account?{" "}
+					<a href="/register" className="text-blue-600 hover:text-blue-800">
+						Sign up here
+					</a>
+				</p>
 			</div>
 		</div>
 	);
