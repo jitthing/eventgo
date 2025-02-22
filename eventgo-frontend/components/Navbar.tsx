@@ -2,21 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 const Navbar = () => {
-	const router = useRouter();
 	const [token, setToken] = useState<string | null>(null);
 
 	useEffect(() => {
 		setToken(localStorage.getItem("token"));
 	}, []);
-
-	function handleLogout() {
-		localStorage.removeItem("token");
-		setToken(null);
-		router.push("/login");
-	}
 
 	return (
 		<nav className="bg-white shadow-lg">
@@ -29,18 +21,13 @@ const Navbar = () => {
 					</div>
 
 					<div className="hidden md:flex items-center space-x-8">
-						<Link href="/events" className="text-black hover:text-blue-600 font-medium">
+						{/* <Link href="/events" className="text-black hover:text-blue-600 font-medium">
 							Events
-						</Link>
+						</Link> */}
 						{token ? (
-							<>
-								<Link href="/profile">
-									<img src="https://api.dicebear.com/6.x/initials/svg?seed=User" alt="Profile" className="w-10 h-10 rounded-full border border-gray-300" />
-								</Link>
-								<button onClick={handleLogout} className="text-black hover:text-red-600 font-medium">
-									Logout
-								</button>
-							</>
+							<Link href="/profile">
+								<img src="https://api.dicebear.com/6.x/initials/svg?seed=User" alt="Profile" className="w-10 h-10 rounded-full border border-gray-300" />
+							</Link>
 						) : (
 							<>
 								<Link href="/login" className="text-black hover:text-blue-600 font-medium">
