@@ -6,25 +6,30 @@ from . import models, schemas
 from .database import engine, get_db, Base  # Import get_db directly from database
 from datetime import datetime
 
+# Initialize FastAPI application
 app = FastAPI(title="Events Service", version="1.0.0")
 
-# Add CORS middleware
+# Add CORS middleware to allow frontend requests
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000"
+    ],  # Allow frontend to communicate with backend
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 
 @app.on_event("startup")
 async def startup():
+    """Create database tables on application startup."""
     Base.metadata.create_all(bind=engine)
 
 
 @app.on_event("startup")
 async def add_sample_data():
+    """Populate the database with sample events on startup if empty."""
     db = next(get_db())
     if db.query(models.Event).count() == 0:
         sample_events = [
@@ -71,18 +76,21 @@ async def add_sample_data():
 
 @app.get("/events", response_model=List[schemas.EventResponse])
 async def list_events(db: Session = Depends(get_db)):
+    """Retrieve a list of all events from the database."""
     events = db.query(models.Event).all()
     return events
 
 
 @app.get("/events/featured", response_model=List[schemas.EventResponse])
 async def get_featured_events(db: Session = Depends(get_db)):
+    """Retrieve a list of all featured events from the database."""
     events = db.query(models.Event).filter(models.Event.is_featured == True).all()
     return events
 
 
 @app.get("/events/{event_id}", response_model=schemas.EventResponse)
 async def get_event(event_id: int, db: Session = Depends(get_db)):
+    """Retrieve details of a specific event by its ID."""
     event = db.query(models.Event).filter(models.Event.id == event_id).first()
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -91,6 +99,7 @@ async def get_event(event_id: int, db: Session = Depends(get_db)):
 
 @app.post("/events", response_model=schemas.EventResponse)
 async def create_event(event: schemas.EventCreate, db: Session = Depends(get_db)):
+    """Create a new event and store it in the database."""
     db_event = models.Event(**event.dict())
     db.add(db_event)
     db.commit()
@@ -98,12 +107,18 @@ async def create_event(event: schemas.EventCreate, db: Session = Depends(get_db)
     return db_event
 
 
+from sqlalchemy.sql import text  # Import text for raw SQL execution
+
+
 @app.get("/health")
-async def health_check():
+async def health_check(db: Session = Depends(get_db)):
+    """Health check endpoint to verify service and database connectivity."""
     try:
-        # Check database connection
-        db = next(get_db())
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))  # Wrap SQL query with text()
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
+        import traceback
+
+        error_details = traceback.format_exc()  # Get full error traceback
+        print(f"❌ Health check failed: {error_details}")  # Print error in logs
         raise HTTPException(status_code=500, detail=str(e))
