@@ -7,6 +7,8 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
+*gpt_helper.py*
+
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
@@ -152,7 +154,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
