@@ -1,8 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    domains: ['localhost'], // Add any other domains you're loading images from
-  },
-}
+	images: {
+		remotePatterns: [
+			{
+				protocol: "https",
+				hostname: "media.gettyimages.com",
+			},
+			{
+				protocol: "https",
+				hostname: "media-cldnry.s-nbcnews.com",
+			},
+			{
+				protocol: "https",
+				hostname: "static.wikia.nocookie.net",
+			},
+		],
+	},
+};
 
-module.exports = nextConfig 
+module.exports = nextConfig;
