@@ -1,11 +1,11 @@
-"use client"; // 🚨 Converts this file into a Client Component
-
+"use client";
 import { useEffect, useState } from "react";
 import { useParams, notFound } from "next/navigation";
 import { getEvent } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import Image from "next/image";
 import SeatSelection from "@/components/SeatSelection";
+import BackButton from "@/components/BackButton";
 
 export default function EventPage() {
 	const params = useParams();
@@ -29,6 +29,11 @@ export default function EventPage() {
 
 	return (
 		<div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
+			{/* ADD the BackButton here */}
+			<div className="mb-4">
+				<BackButton />
+			</div>
+
 			<div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
 				{/* Event Image */}
 				<div className="relative w-full h-96 md:h-[500px] rounded-lg overflow-hidden">
