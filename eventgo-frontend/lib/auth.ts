@@ -5,42 +5,41 @@ export async function loginUser(email: string, password: string) {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ username: email, password }),
+    credentials: "include",  // ✅ Ensure cookies are included
   });
 
   if (!response.ok) throw new Error("Invalid login credentials");
-  return response.json(); // Returns { access_token, token_type }
+  return response.json();
 }
 
 export async function registerUser(email: string, password: string) {
-    const response = await fetch(`${AUTH_API_URL}/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-  
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || "Registration failed");
-    }
-    return response.json(); // Returns { id, email }
-  }
+  const response = await fetch(`${AUTH_API_URL}/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+    credentials: "include", // ✅ Ensure cookies are included
+  });
 
-export async function fetchUser(token: string) {
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || "Registration failed");
+  }
+  return response.json();
+}
+
+export async function fetchUser() {
   const response = await fetch(`${AUTH_API_URL}/me`, {
     method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
+    credentials: "include", // ✅ Ensure cookies are included
   });
 
   if (!response.ok) throw new Error("Unauthorized");
   return response.json();
 }
 
-export async function logoutUser(token: string) {
+export async function logoutUser() {
   await fetch(`${AUTH_API_URL}/logout`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token }),
+    credentials: "include", // ✅ Ensure cookies are included
   });
-
-  localStorage.removeItem("token");
 }

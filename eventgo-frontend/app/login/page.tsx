@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { loginUser } from "@/lib/auth";
+import { loginUser, fetchUser } from "@/lib/auth";
 
 export default function LoginPage() {
 	const router = useRouter();
@@ -11,9 +11,13 @@ export default function LoginPage() {
 	const [error, setError] = useState("");
 
 	useEffect(() => {
-		if (localStorage.getItem("token")) {
-			router.push("/profile"); // Redirect if already logged in
+		async function checkSession() {
+			try {
+				await fetchUser();
+				router.push("/profile"); // NEW: Redirect if already authenticated
+			} catch {}
 		}
+		checkSession();
 	}, [router]);
 
 	async function handleLogin(event: React.FormEvent) {
@@ -21,8 +25,9 @@ export default function LoginPage() {
 		setError("");
 
 		try {
-			const { access_token } = await loginUser(email, password);
-			localStorage.setItem("token", access_token);
+			// Call loginUser; the backend sets the HTTP-only cookie automatically
+			await loginUser(email, password);
+			// No need to save any token manually
 			router.push("/profile");
 		} catch (err: any) {
 			setError(err.message || "Failed to login.");
@@ -41,12 +46,6 @@ export default function LoginPage() {
 						Login
 					</button>
 				</form>
-				<p className="text-black mt-4">
-					Don't have an account?{" "}
-					<a href="/register" className="text-blue-600 hover:text-blue-800">
-						Sign up here
-					</a>
-				</p>
 			</div>
 		</div>
 	);

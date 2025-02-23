@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { fetchUser } from "@/lib/auth";
+import { fetchUser, logoutUser } from "@/lib/auth";
 import { getUserOrders } from "@/lib/mock-orders";
 import Link from "next/link";
 
@@ -13,13 +13,10 @@ export default function ProfilePage() {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		const token = localStorage.getItem("token") || ""; // Fix: Ensure token is always a string
-		if (!token) return router.push("/login");
-
 		async function fetchData() {
 			try {
-				const userData = await fetchUser(token);
-				const ordersData: any[] = await getUserOrders(); // Fix: Ensure it's an array
+				const userData = await fetchUser();
+				const ordersData: any[] = await getUserOrders();
 				setUser(userData);
 				setOrders(ordersData);
 				setLoading(false);
@@ -33,9 +30,18 @@ export default function ProfilePage() {
 	const upcomingEvents = orders.filter((order) => order.status === "Upcoming");
 	const pastEvents = orders.filter((order) => order.status === "Completed");
 
-	function handleLogout() {
-		localStorage.removeItem("token");
-		router.push("/login");
+	async function handleLogout() {
+		try {
+			// 1) Notify the backend to remove the cookie & blacklist
+			await logoutUser();
+
+			// 2) Redirect to login
+			router.push("/login");
+		} catch (err) {
+			console.error("Logout error:", err);
+			// Fallback redirect
+			router.push("/login");
+		}
 	}
 
 	return (

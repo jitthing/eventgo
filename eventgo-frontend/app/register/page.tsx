@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { registerUser, loginUser } from "@/lib/auth";
+import { registerUser, loginUser, fetchUser } from "@/lib/auth";
 
 export default function RegisterPage() {
 	const router = useRouter();
@@ -12,9 +12,13 @@ export default function RegisterPage() {
 	const [error, setError] = useState("");
 
 	useEffect(() => {
-		if (localStorage.getItem("token")) {
-			router.push("/profile"); // Redirect if already logged in
+		async function checkSession() {
+			try {
+				await fetchUser();
+				router.push("/profile"); // NEW: Redirect if already authenticated
+			} catch {}
 		}
+		checkSession();
 	}, [router]);
 
 	async function handleRegister(event: React.FormEvent) {
@@ -27,12 +31,9 @@ export default function RegisterPage() {
 		}
 
 		try {
-			// Register user
+			// Call registerUser; the backend sets the HTTP-only cookie automatically
 			await registerUser(email, password);
-
-			// Auto-login after registration
-			const { access_token } = await loginUser(email, password);
-			localStorage.setItem("token", access_token);
+			// No need to save any token manually
 			router.push("/profile");
 		} catch (err: any) {
 			setError(err.message || "Failed to register.");
@@ -52,12 +53,6 @@ export default function RegisterPage() {
 						Register
 					</button>
 				</form>
-				<p className="text-black mt-4">
-					Already have an account?{" "}
-					<a href="/login" className="text-blue-600 hover:text-blue-800">
-						Login here
-					</a>
-				</p>
 			</div>
 		</div>
 	);
