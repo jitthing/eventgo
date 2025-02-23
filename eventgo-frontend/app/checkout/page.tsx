@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getEvent } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import BackButton from "@/components/BackButton";
 
 export default function CheckoutPage() {
 	// 1) Read query params in a Client Component
@@ -63,7 +64,9 @@ export default function CheckoutPage() {
 	const totalPrice = selectedSeats.length * event.price;
 
 	return (
-		<div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
+		<div className="relative min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
+			{/* Global Back Button */}
+			<BackButton />
 			<div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8">
 				<h1 className="text-3xl font-bold text-black">Checkout</h1>
 				<p className="text-black mt-2">Confirm your details before proceeding to payment.</p>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import BackButton from "@/components/BackButton";
 
 export default function PaymentPage() {
 	const searchParams = useSearchParams();
@@ -32,7 +33,9 @@ export default function PaymentPage() {
 	}, [eventId, seats, total, router]);
 
 	return (
-		<div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
+		<div className="relative min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
+			{/* Global Back Button */}
+			<BackButton />{" "}
 			<div className="max-w-3xl mx-auto bg-white shadow-lg rounded-lg p-8">
 				<h1 className="text-3xl font-bold text-black">Payment</h1>
 				<p className="text-black mt-2">Confirm your payment details below.</p>
