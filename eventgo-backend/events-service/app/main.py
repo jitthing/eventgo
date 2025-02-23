@@ -37,9 +37,12 @@ async def health_check(db: Session = Depends(get_db)):
 
 # 🎟 Get all events (without seats)
 @app.get("/events", response_model=List[schemas.EventResponse])
-async def list_events(db: Session = Depends(get_db)):
-    # Eagerly load seats using joinedload so they're available in the response
-    events = db.query(models.Event).options(joinedload(models.Event.seats)).all()
+async def list_events(is_featured: bool = False, db: Session = Depends(get_db)):
+    """Retrieve all events or only featured ones based on query parameter."""
+    query = db.query(models.Event)
+    if is_featured:
+        query = query.filter(models.Event.is_featured == True)
+    events = query.options(joinedload(models.Event.seats)).all()
     return events
 
 

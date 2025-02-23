@@ -1,3 +1,5 @@
+docker compose down --volumes
+
 docker compose up -d --build
 
-docker compose down --volumes
+python seed_data.py
