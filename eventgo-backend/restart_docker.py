@@ -13,14 +13,14 @@ def main():
         print("Stopping and removing volumes...")
         run_command("docker compose down --volumes")
 
-        print("Waiting 3 seconds...")
-        time.sleep(3)
+        print("Waiting 2 seconds...")
+        time.sleep(2)
 
         print("Starting Docker containers with build...")
         run_command("docker compose up -d --build")
 
-        print("Waiting 5 seconds...")
-        time.sleep(5)
+        print("Waiting 2 seconds...")
+        time.sleep(2)
 
         print("Seeding data...")
         run_command("python seed_data.py")

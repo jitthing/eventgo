@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, Response, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -66,7 +66,9 @@ async def register_user(user: schemas.UserCreate, db: Session = Depends(get_db))
 
 @app.post("/login", response_model=schemas.Token)
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    response: Response,  # ✅ Include response to set cookies
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
 ):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
     if not user or not models.User.verify_password(
@@ -79,6 +81,17 @@ async def login(
         )
 
     access_token = create_access_token(data={"sub": user.email})
+
+    # ✅ Set the token in an httpOnly cookie
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {access_token}",
+        httponly=True,  # ✅ Prevents JS access
+        # secure=True,  # ✅ Necessary to comment out as we're developing locally with http without https
+        # samesite="Strict",
+        samesite="None",  # same reason
+    )
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -88,9 +101,18 @@ async def read_users_me(current_user: models.User = Depends(get_current_user)):
 
 
 @app.post("/logout")
-async def logout(token: str):
-    """Invalidate a JWT token."""
-    add_to_blacklist(token)
+async def logout(response: Response, request: Request):
+    """Invalidate a JWT token and remove the cookie."""
+    token = request.cookies.get("access_token")
+    if token is not None:
+        # Optionally remove the "Bearer " prefix if present
+        if token.startswith("Bearer "):
+            token = token[len("Bearer ") :]
+        add_to_blacklist(token)
+
+    # Remove the cookie so the browser no longer sends it
+    response.delete_cookie(key="access_token")
+
     return {"message": "Successfully logged out"}
 
 

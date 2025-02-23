@@ -2,8 +2,9 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends, Request, Response
 from sqlalchemy.orm import Session
+from .token_blacklist import is_token_blacklisted  # NEW: Import the blacklist checker
 
 from .database import get_db
 from . import models
@@ -28,10 +29,28 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 
-def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
-):
-    """Verify and decode the JWT token, returning the user from the DB."""
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Optionally remove the "Bearer " prefix if present
+    if token.startswith("Bearer "):
+        token = token[len("Bearer ") :]
+
+    # 1) Check if token is blacklisted
+    if is_token_blacklisted(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token is blacklisted",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 2) Continue with normal JWT decoding
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
