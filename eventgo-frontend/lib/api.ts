@@ -27,7 +27,7 @@ export async function getTicketsForEvent(eventId: number) {
 }
 
 export async function getFeaturedEvents(): Promise<Event[]> {
-  const response = await fetch(`${EVENTS_API_URL}/events/featured`);
+  const response = await fetch(`${EVENTS_API_URL}/events?featured=true`);
   if (!response.ok) {
     throw new Error('Failed to fetch featured events');
   }
