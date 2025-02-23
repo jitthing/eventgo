@@ -1,4 +1,4 @@
-import { Event, Seat } from "./interfaces";
+import { Event, Seat, TicketStatus } from "./interfaces";
 
 const EVENTS_API_URL = process.env.NEXT_PUBLIC_EVENTS_API_URL || 'http://localhost:8002';
 const TICKETS_API_URL = process.env.NEXT_PUBLIC_TICKETS_API_URL || 'http://localhost:8003';
@@ -46,6 +46,23 @@ export async function getFeaturedEvents(): Promise<Event[]> {
 
 
 export async function getAvailableSeats(eventId: number): Promise<Seat[]> {
-  const event = await getEvent(eventId); // Get event details
-  return event.seats || []; // Return seat list (or empty array if undefined)
+  // 1) Call the TICKETS-SERVICE endpoint that already merges seat + status
+  const response = await fetch(`${TICKETS_API_URL}/events/${eventId}/seats`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch seats for event ${eventId}`);
+  }
+
+  // 2) Parse JSON to an array of seats
+  const seats: Seat[] = await response.json();
+
+  // Each seat has "id", "seat_number", "category", and "status"
+  // For safety, ensure status is one of our known TicketStatus values:
+  const normalized = seats.map((seat) => {
+    if (!seat.status) {
+      seat.status = TicketStatus.AVAILABLE; 
+    }
+    return seat;
+  });
+
+  return normalized;
 }

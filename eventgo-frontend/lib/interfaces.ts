@@ -19,6 +19,8 @@ export interface Seat {
   id: number;
   seat_number: string;
   category: string; // e.g., "VIP", "Standard"
+  status?: TicketStatus;
+
 }
 
 export interface Event {
