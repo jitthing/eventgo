@@ -4,7 +4,7 @@ from .models import TicketStatus
 
 
 # -----------------------------
-# Existing Ticket Schemas
+# Ticket Schemas
 # -----------------------------
 class TicketBase(BaseModel):
     event_id: int
@@ -26,7 +26,7 @@ class TicketResponse(TicketBase):
 
 
 # -----------------------------
-# New Seat Schemas
+# Seat Schemas
 # -----------------------------
 class SeatBase(BaseModel):
     event_id: int
@@ -40,7 +40,7 @@ class SeatCreate(SeatBase):
 
 class SeatResponse(SeatBase):
     id: int
-    ticket_id: int | None = None  # None means the seat is unassigned
 
+    # Removed ticket_id because it's not a database column in the Seat model.
     class Config:
         from_attributes = True
