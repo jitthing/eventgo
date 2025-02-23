@@ -45,6 +45,82 @@ EVENTS_SERVICE_URL = os.getenv("EVENTS_SERVICE_URL", "http://events-service:8000
 
 
 # ----------------------------------------------------------
+# GET Booked Seats (Fetches from Events Service)
+# ----------------------------------------------------------
+@app.get("/events/{event_id}/booked-seats", response_model=List[int])
+async def get_booked_seats(event_id: int, db: Session = Depends(get_db)):
+    """
+    Retrieve a list of seat IDs that are either RESERVED or SOLD for a given event.
+    """
+    booked_tickets = (
+        db.query(models.Ticket)
+        .filter(models.Ticket.event_id == event_id)
+        .filter(
+            models.Ticket.status.in_(
+                [models.TicketStatus.RESERVED, models.TicketStatus.SOLD]
+            )
+        )
+        .all()
+    )
+
+    booked_seat_ids = [ticket.seat_id for ticket in booked_tickets]
+    return booked_seat_ids
+
+
+# ----------------------------------------------------------
+# REPLACE or UPDATE this endpoint
+# ----------------------------------------------------------
+@app.get("/events/{event_id}/seats", response_model=List[schemas.SeatWithStatus])
+async def get_seats_with_status(event_id: int, db: Session = Depends(get_db)):
+    """
+    Return all seats (from Events Service) for the given event_id,
+    each with a real-time status: "AVAILABLE", "RESERVED", or "SOLD".
+    """
+    # 1) Fetch the seat list from the Events-Service (via /events/{event_id})
+    EVENTS_SERVICE_URL = os.getenv("EVENTS_SERVICE_URL", "http://events-service:8000")
+    try:
+        resp = requests.get(f"{EVENTS_SERVICE_URL}/events/{event_id}", timeout=5)
+        resp.raise_for_status()
+        event_data = resp.json()
+        seats_from_events = event_data.get("seats", [])
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving seats from Events Service: {e}"
+        )
+
+    # If no seats exist in the event-service, just return an empty list
+    if not seats_from_events:
+        return []
+
+    # 2) Build a map of seat_id -> ticket.status from the local tickets DB
+    seat_ids = [s["id"] for s in seats_from_events]
+    tickets = db.query(models.Ticket).filter(models.Ticket.seat_id.in_(seat_ids)).all()
+    seat_status_map = {
+        ticket.seat_id: ticket.status.value  # e.g. "RESERVED" or "SOLD"
+        for ticket in tickets
+    }
+
+    # 3) Combine seat data (from Events) with seat status (from Tickets)
+    result = []
+    for seat in seats_from_events:
+        seat_id = seat["id"]
+        # If a seat is not in seat_status_map, that means no ticket was created => "AVAILABLE"
+        status = seat_status_map.get(seat_id, "AVAILABLE")
+
+        # Build a unified seat-with-status dictionary
+        item = {
+            "id": seat_id,
+            "event_id": seat["event_id"],
+            "seat_number": seat["seat_number"],
+            "category": seat["category"],
+            "status": status,
+        }
+        result.append(item)
+
+    return result
+
+
+# ----------------------------------------------------------
 # GET Available Seats (Fetches from Events Service)
 # ----------------------------------------------------------
 @app.get("/events/{event_id}/seats", response_model=List[schemas.SeatResponse])

@@ -1,10 +1,12 @@
+# tickets-service/app/schemas.py
+
 from pydantic import BaseModel
 from datetime import datetime
 from .models import TicketStatus
 
 
 # -----------------------------
-# Ticket Schemas
+# Existing Ticket Schemas
 # -----------------------------
 class TicketBase(BaseModel):
     event_id: int
@@ -26,11 +28,11 @@ class TicketResponse(TicketBase):
 
 
 # -----------------------------
-# Seat Schemas
+# Existing Seat Schemas
 # -----------------------------
 class SeatBase(BaseModel):
     event_id: int
-    seat_number: str  # e.g., "A12", "B5"
+    seat_number: str
     category: str  # e.g., "VIP", "Standard"
 
 
@@ -41,6 +43,19 @@ class SeatCreate(SeatBase):
 class SeatResponse(SeatBase):
     id: int
 
-    # Removed ticket_id because it's not a database column in the Seat model.
+    class Config:
+        from_attributes = True
+
+
+# -----------------------------
+# NEW schema: SeatWithStatus
+# -----------------------------
+class SeatWithStatus(BaseModel):
+    id: int
+    event_id: int
+    seat_number: str
+    category: str
+    status: str  # "AVAILABLE", "RESERVED", or "SOLD"
+
     class Config:
         from_attributes = True

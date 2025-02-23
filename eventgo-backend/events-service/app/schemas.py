@@ -22,6 +22,7 @@ class EventCreate(EventBase):
 
 class SeatResponse(BaseModel):
     id: int
+    event_id: int
     seat_number: str
     category: str
 
