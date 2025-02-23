@@ -4,8 +4,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from . import models, schemas
 from .database import engine, get_db
+from .schemas import TokenValidationRequest
+
 from jose import JWTError, jwt
-from .dependencies import SECRET_KEY, ALGORITHM  # if you store them here
 from .dependencies import (
     get_db,
     create_access_token,
@@ -94,15 +95,15 @@ async def logout(token: str):
 
 
 @app.post("/validate-token")
-async def validate_token(token: str, db: Session = Depends(get_db)):
-    """Validate token & check if blacklisted"""
-
+async def validate_token(
+    token_data: TokenValidationRequest, db: Session = Depends(get_db)
+):
+    token = token_data.token
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid token",
         headers={"WWW-Authenticate": "Bearer"},
     )
-
     if is_token_blacklisted(token):
         raise credentials_exception
 

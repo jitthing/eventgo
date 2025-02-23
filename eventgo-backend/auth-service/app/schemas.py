@@ -1,10 +1,13 @@
 from pydantic import BaseModel, EmailStr
 
+
 class UserBase(BaseModel):
     email: EmailStr
 
+
 class UserCreate(UserBase):
     password: str
+
 
 class UserResponse(UserBase):
     id: int
@@ -13,9 +16,15 @@ class UserResponse(UserBase):
     class Config:
         from_attributes = True
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str
 
+
 class TokenData(BaseModel):
-    email: str | None = None 
+    email: str | None = None
+
+
+class TokenValidationRequest(BaseModel):
+    token: str
