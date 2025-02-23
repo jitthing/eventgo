@@ -62,7 +62,7 @@ export default function EventPage() {
 					</div>
 
 					{/* Seat Selection Component */}
-					<SeatSelection capacity={event.capacity} eventId={event.id} />
+					<SeatSelection eventId={event.id} />
 				</div>
 			</div>
 		</div>
