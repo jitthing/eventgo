@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
     # --------------------------------------------------------------------------
     # AUTH SERVICE
@@ -12,6 +14,11 @@ services:
         depends_on:
             auth-db:
                 condition: service_healthy
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
         restart: always
 
     auth-db:
@@ -42,6 +49,11 @@ services:
         depends_on:
             events-db:
                 condition: service_healthy
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
         restart: always
 
     events-db:
@@ -72,8 +84,13 @@ services:
         depends_on:
             tickets-db:
                 condition: service_healthy
-            events-service: # Ensure Events service starts before Tickets service
-                condition: service_started
+            events-service:
+                condition: service_healthy
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
         restart: always
 
     tickets-db:
