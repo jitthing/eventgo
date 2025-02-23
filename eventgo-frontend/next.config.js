@@ -14,6 +14,10 @@ const nextConfig = {
 				protocol: "https",
 				hostname: "static.wikia.nocookie.net",
 			},
+			{
+				protocol: "https",
+				hostname: "media1.s-nbcnews.com",
+			},
 		],
 	},
 };
