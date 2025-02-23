@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 from datetime import datetime
 from . import models, schemas
@@ -38,7 +38,8 @@ async def health_check(db: Session = Depends(get_db)):
 # 🎟 Get all events (without seats)
 @app.get("/events", response_model=List[schemas.EventResponse])
 async def list_events(db: Session = Depends(get_db)):
-    events = db.query(models.Event).all()
+    # Eagerly load seats using joinedload so they're available in the response
+    events = db.query(models.Event).options(joinedload(models.Event.seats)).all()
     return events
 
 
