@@ -1,4 +1,4 @@
-import { Event } from "./interfaces";
+import { Event, Seat } from "./interfaces";
 
 const EVENTS_API_URL = process.env.NEXT_PUBLIC_EVENTS_API_URL || 'http://localhost:8002';
 const TICKETS_API_URL = process.env.NEXT_PUBLIC_TICKETS_API_URL || 'http://localhost:8003';
@@ -42,4 +42,10 @@ export async function getFeaturedEvents(): Promise<Event[]> {
   });
   
   return transformedEvents;
+}
+
+
+export async function getAvailableSeats(eventId: number): Promise<Seat[]> {
+  const event = await getEvent(eventId); // Get event details
+  return event.seats || []; // Return seat list (or empty array if undefined)
 }
