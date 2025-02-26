@@ -89,7 +89,8 @@ async def login(
         httponly=True,  # ✅ Prevents JS access
         # secure=True,  # ✅ Necessary to comment out as we're developing locally with http without https
         # samesite="Strict",
-        samesite="None",  # same reason
+        samesite="lax",  # i changed this to lax, i think "none" required secure to be True
+        path="/"
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
@@ -142,3 +143,7 @@ async def validate_token(
         raise credentials_exception
 
     return {"email": user.email, "id": user.id}
+
+@app.get("/debug-cookies")
+async def debug_cookies(request: Request):
+    return {"cookies": request.cookies}

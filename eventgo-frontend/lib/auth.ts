@@ -1,11 +1,12 @@
-const AUTH_API_URL = process.env.NEXT_PUBLIC_AUTH_API_URL || "http://localhost:8001";
+const AUTH_API_URL =
+  process.env.NEXT_PUBLIC_AUTH_API_URL || "http://localhost:8001";
 
 export async function loginUser(email: string, password: string) {
   const response = await fetch(`${AUTH_API_URL}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ username: email, password }),
-    credentials: "include",  // ✅ Ensure cookies are included
+    credentials: "include", // ✅ Ensure cookies are included
   });
 
   if (!response.ok) throw new Error("Invalid login credentials");
@@ -42,4 +43,12 @@ export async function logoutUser() {
     method: "POST",
     credentials: "include", // ✅ Ensure cookies are included
   });
+}
+
+export async function debugCookies() {
+  const response = await fetch(`${AUTH_API_URL}/debug-cookies`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return response.json();
 }
