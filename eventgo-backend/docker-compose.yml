@@ -111,12 +111,12 @@ services:
   # --------------------------------------------------------------------------
   # STRIPE WRAPPER SERVICE
   # --------------------------------------------------------------------------
-  payments:
+  stripe-service:
     build: ./stripe-service
     ports:
       - "8004:8000"
-    environment:
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+    env_file:
+      - ./stripe-service/.env
     volumes:
       - ./stripe-service:/app
 
