@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import stripe
 import os
+from typing import List, Optional
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
@@ -32,6 +33,12 @@ class PaymentValidationRequest(BaseModel):
     payment_intent_id: str
     event_id: str
     seats: list
+
+class RefundRequest(BaseModel):
+    payment_intent_id: str
+    amount: Optional[int] = None  # If None, full refund
+    reason: Optional[str] = None
+
 
 @app.post("/create-payment-intent")
 async def create_payment_intent(payment: PaymentIntent):
@@ -122,10 +129,6 @@ async def confirm_booking(payment: PaymentValidationRequest):
         if not validation_result.get("valid"):
             raise HTTPException(status_code=400, detail="Payment validation failed")
         
-        # Here you would make an API call to your booking/tickets service
-        # to finalize the booking and create the tickets
-        
-        # For now we'll just return success
         return {
             "status": "success",
             "event_id": payment.event_id,
@@ -136,6 +139,18 @@ async def confirm_booking(payment: PaymentValidationRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error confirming booking: {str(e)}")
+    
+@app.post("/refund")
+async def refund_booking(payment: RefundRequest):
+    try:
+        refund = stripe.Refund.create(
+            payment_intent=payment.payment_intent_id,
+            amount=payment.amount,
+            reason=payment.reason
+        )
+        return refund
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/health")  # Changed from "/heath"
 def get_health():

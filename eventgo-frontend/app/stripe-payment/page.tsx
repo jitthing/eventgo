@@ -224,11 +224,11 @@ export default function PaymentPage(): JSX.Element {
     }, 1500);
   };
 
-  // useEffect(() => {
-  //   if (!eventId || !seats || !total) {
-  //     router.push("/checkout"); // Redirect if missing params
-  //   }
-  // }, [eventId, seats, total, router]);
+  useEffect(() => {
+    if (!eventId || !seats || !total) {
+      router.push("/checkout"); // Redirect if missing params
+    }
+  }, [eventId, seats, total, router]);
 
   // Define stripe element options with proper typing
   const options: StripeElementsOptions = {
