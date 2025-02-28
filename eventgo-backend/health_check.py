@@ -5,6 +5,7 @@ SERVICES = {
     "auth-service": "http://localhost:8001/health",
     "events-service": "http://localhost:8002/health",
     "tickets-service": "http://localhost:8003/health",
+    "stripe-service": "http://localhost:8004/health",
 }
 
 
