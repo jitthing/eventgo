@@ -1,6 +1,10 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import List
+from .models import EventStatus
+from typing import Optional
+
+
 
 
 class EventBase(BaseModel):
@@ -14,7 +18,7 @@ class EventBase(BaseModel):
     venue: str
     capacity: int
     is_featured: bool = False
-
+    status: EventStatus = EventStatus.TICKETS_AVAILABLE
 
 class EventCreate(EventBase):
     pass
@@ -36,3 +40,21 @@ class EventResponse(EventBase):
 
     class Config:
         from_attributes = True
+
+
+
+class EventUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    date: Optional[str] = None
+    location: Optional[str] = None
+    category: Optional[str] = None
+    price: Optional[int] = None
+    image_url: Optional[str] = None
+    venue: Optional[str] = None
+    capacity: Optional[int] = None
+    is_featured: Optional[bool] = None
+    status: Optional[EventStatus] = None
+
+    class Config:
+        from_attributes = True  # Ensures compatibility with ORM models

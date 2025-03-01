@@ -35,7 +35,7 @@ async def health_check(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# 🎟 Get all events (without seats)
+# 🎟 Get all events 
 @app.get("/events", response_model=List[schemas.EventResponse])
 async def list_events(is_featured: bool = False, db: Session = Depends(get_db)):
     """Retrieve all events or only featured ones based on query parameter."""
@@ -46,7 +46,7 @@ async def list_events(is_featured: bool = False, db: Session = Depends(get_db)):
     return events
 
 
-# 🎟 Get event details (with seats)
+# 🎟 Get event details of specific event
 @app.get("/events/{event_id}", response_model=schemas.EventResponse)
 async def get_event(event_id: int, db: Session = Depends(get_db)):
     """Retrieve event details including available seats."""
@@ -79,3 +79,29 @@ async def create_event(event: schemas.EventCreate, db: Session = Depends(get_db)
     db.commit()
 
     return db_event
+
+# ✅ Update an event 
+@app.patch("/events/{event_id}", response_model=schemas.EventResponse)
+def update_event(event_id: int, event_data: schemas.EventUpdate, db: Session = Depends(get_db)):
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    for key, value in event_data.model_dump(exclude_unset=True).items():
+        setattr(event, key, value)
+    
+    db.commit()
+    db.refresh(event)
+    return event
+
+# ✅ Delete an event
+@app.delete("/events/{event_id}")
+def delete_event(event_id: int, db: Session = Depends(get_db)):
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    db.delete(event)
+    db.commit()
+    return {"status": "success", "message": "Event deleted successfully"}
+

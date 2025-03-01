@@ -1,7 +1,14 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from .database import Base
+import enum
 
+class EventStatus(enum.Enum):
+    SCHEDULED = "Scheduled"
+    TICKETS_AVAILABLE = "Tickets Available"
+    SOLD_OUT = "Sold Out"
+    CANCELLED = "Cancelled"
+    POSTPONED = "Postponed"
 
 class Event(Base):
     __tablename__ = "events"
@@ -17,6 +24,7 @@ class Event(Base):
     venue = Column(String)
     capacity = Column(Integer)
     is_featured = Column(Boolean, default=False)
+    status = Column(Enum(EventStatus), default=EventStatus.TICKETS_AVAILABLE)
 
     seats = relationship("Seat", back_populates="event", cascade="all, delete-orphan")
 
