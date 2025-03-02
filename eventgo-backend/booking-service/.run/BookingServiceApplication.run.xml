@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="BookingServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+    <option name="ALTERNATIVE_JRE_PATH" value="21-final" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+    <envs>
+      <env name="TICKETS_SERVICE_URL" value="http://tickets-service:8000" />
+      <env name="STRIPE_SERVICE_URL" value="http://stripe-service:8000" />
+    </envs>
+    <module name="booking-service" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="ticketBookingSystem.BookingServiceApplication" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

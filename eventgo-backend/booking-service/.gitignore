@@ -1,0 +1,134 @@
+# 🟧 Java & IDE Specific
+*.class
+*.jar
+*.war
+*.iml
+*.log
+*.jks
+*.hprof
+*.swp
+
+# 📂 Build Directories
+/target/
+/out/
+/build/
+/bin/
+
+# 🧰 Maven & Gradle
+.mvn/
+!mvn/wrapper/maven-wrapper.jar
+**/mvnw
+**/mvnw.cmd
+**/mvn/wrapper/maven-wrapper.properties
+**/mvn/wrapper/maven-wrapper.jar
+**/mvn/wrapper/MavenWrapperDownloader.java
+.gradle/
+/.gradle-cache/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.gradle/wrapper/gradle-wrapper.properties
+.gradle/wrapper/gradle-wrapper.jar
+
+# 🔑 Security & Configuration
+*.env
+application.properties
+application.yml
+application-*.properties
+application-*.yml
+.env
+*.key
+*.pem
+*.p12
+
+# 🚫 Temporary Files
+*.tmp
+*.bak
+*.swp
+*.swo
+*.DS_Store
+*.idea/
+.idea/
+.vscode/
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# 🚦 Logs & Metadata
+/logs/
+/*.log
+*.log.*
+
+# 🚫 System Files
+Thumbs.db
+.DS_Store
+*.~*
+*~
+
+# 🐳 Docker
+docker-compose.override.yml
+*.env
+
+# 🧪 Test Output
+/test-output/
+/surefire-reports/
+/test-reports/
+
+# 🗂️ Package Managers
+node_modules/
+package-lock.json
+yarn.lock
+
+# 💼 IDE Specific (Optional)
+# IntelliJ
+*.idea
+*.iws
+*.ipr
+*.iml
+.idea/
+*.bak
+*.swp
+
+# Eclipse
+.project
+.classpath
+.settings/
+target/
+
+# VS Code
+.vscode/
+.history/
+
+# 🔗 OS Specific
+*.DS_Store
+*.AppleDouble
+*.LSOverride
+
+# 🧊 Backup files
+*.bak
+*.swp
+*.orig
+*.tmp
+*.old
+
+# 🚫 Generated Files
+target/
+!.mvn/wrapper/maven-wrapper.jar
+hs_err_pid*.log
+
+# 🌐 Network & Services
+*.retry
+*.retry.txt
+*.retry.*
+
+# 💻 Runtime Files
+*.pid
+*.seed
+*.pid.lock
+
+# 🚀 Application Specific
+/db
+/sql/
+*.db
+*.sql
+*.sqlite
