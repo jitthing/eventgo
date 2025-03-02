@@ -49,7 +49,8 @@ function PaymentForm({ eventId, seats, total, onSuccess }: PaymentFormProps) {
           }/create-payment-intent`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json",
+             },
             body: JSON.stringify({
               amount: Math.round(parseFloat(total) * 100), // Convert to cents and ensure it's an integer
               event_id: eventId,
@@ -101,25 +102,60 @@ function PaymentForm({ eventId, seats, total, onSuccess }: PaymentFormProps) {
       return;
     }
 
-    const { error, paymentIntent } = await stripe.confirmCardPayment(
-      clientSecret,
-      {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            name: "Customer Name", // Ideally get this from a form
+    try {
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        {
+          payment_method: {
+            card: cardElement,
+            billing_details: {
+              name: "Customer Name", // Ideally get this from a form
+            },
           },
-        },
+        }
+      );
+
+      if (error) {
+        throw new Error(error.message || "Payment failed");
       }
-    );
 
-    if (error) {
-      setError(error.message || "Payment failed");
-    } else if (paymentIntent?.status === "succeeded") {
-      onSuccess();
+      if (paymentIntent?.status === "succeeded") {
+        // Call confirm-booking endpoint to finalize the booking
+        const confirmResponse = await fetch(
+          `${
+            process.env.NEXT_PUBLIC_PAYMENTS_API_URL || "http://localhost:8004"
+          }/confirm-booking`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              payment_intent_id: paymentIntent.id,
+              event_id: eventId,
+              seats: seats?.split(","),
+            }),
+          }
+        );
+
+        if (!confirmResponse.ok) {
+          const errorData = await confirmResponse.json();
+          throw new Error(errorData.detail || "Failed to confirm booking");
+        }
+
+        // Pass the payment intent ID to the success handler
+        onSuccess();
+      } else {
+        throw new Error("Payment processing did not complete");
+      }
+    } catch (err) {
+      console.error("Payment error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Payment processing failed. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
