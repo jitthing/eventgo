@@ -23,7 +23,11 @@ def main():
         time.sleep(2)
 
         print("Seeding data...")
-        run_command("python seed_data.py")
+        try:
+            run_command("python seed_data.py")
+        except subprocess.CalledProcessError: # I added this because for those who must use python3 instead of python as a command
+            print("Seeding data failed. Running fallback command...")
+            run_command("python3 seed_data.py")
 
         print("Process completed successfully.")
     except subprocess.CalledProcessError as e:

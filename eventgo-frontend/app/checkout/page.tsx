@@ -94,7 +94,7 @@ export default function CheckoutPage() {
 
 				{/* Proceed to Payment */}
 				<div className="mt-8">
-					<Link href={`/payment?eventId=${event.id}&seats=${selectedSeats.join(",")}&total=${totalPrice}`} className="block text-center bg-blue-600 text-white font-medium py-3 px-8 rounded-md hover:bg-blue-700 transition-colors">
+					<Link href={`/stripe-payment?eventId=${event.id}&seats=${selectedSeats.join(",")}&total=${totalPrice}`} className="block text-center bg-blue-600 text-white font-medium py-3 px-8 rounded-md hover:bg-blue-700 transition-colors">
 						Proceed to Payment
 					</Link>
 				</div>
