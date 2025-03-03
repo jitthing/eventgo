@@ -2,13 +2,13 @@ from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import stripe
 import os
-from typing import List, Optional
+from . import schemas
+
 from dotenv import load_dotenv
-from pydantic import BaseModel
 
 load_dotenv()
 
-app = FastAPI()
+app = FastAPI(title="Stripe Service")
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,28 +20,12 @@ app.add_middleware(
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
-class PaymentIntent(BaseModel):
-    amount: int
-    currency: str = "sgd"
-    event_id: str
-    seats: list
 
-class PaymentStatusRequest(BaseModel):
-    payment_intent_id: str
-
-class PaymentValidationRequest(BaseModel):
-    payment_intent_id: str
-    event_id: str
-    seats: list
-
-class RefundRequest(BaseModel):
-    payment_intent_id: str
-    amount: Optional[int] = None  # If None, full refund
-    reason: Optional[str] = None
-
-
-@app.post("/create-payment-intent")
-async def create_payment_intent(payment: PaymentIntent):
+@app.post("/create-payment-intent", response_model=schemas.PaymentIntentResponse)
+async def create_payment_intent(payment: schemas.PaymentIntent):
+    """
+    Create a new PaymentIntent for the given amount, with seats and event upon checkout click.
+    """
     try:
         intent = stripe.PaymentIntent.create(
             amount=payment.amount,
@@ -55,7 +39,7 @@ async def create_payment_intent(payment: PaymentIntent):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/webhook")
+@app.post("/webhook", response_model=schemas.WebhookResponse)
 async def stripe_webhook(request: Request):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
@@ -84,8 +68,11 @@ async def stripe_webhook(request: Request):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.get("/payment-status/{payment_intent_id}")
+@app.get("/payment-status/{payment_intent_id}", response_model=schemas.PaymentStatusResponse)
 async def get_payment_status(payment_intent_id: str):
+    """
+    Get the status for a given PaymentIntent ID.
+    """
     try:
         payment = stripe.PaymentIntent.retrieve(payment_intent_id)
         return {
@@ -97,8 +84,8 @@ async def get_payment_status(payment_intent_id: str):
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/validate-payment")
-async def validate_payment(payment: PaymentValidationRequest):
+@app.post("/validate-payment", response_model=schemas.PaymentValidationResponse)
+async def validate_payment(payment: schemas.PaymentValidationRequest):
     try:
         # Retrieve the payment intent to verify its status
         payment_intent = stripe.PaymentIntent.retrieve(payment.payment_intent_id)
@@ -119,8 +106,8 @@ async def validate_payment(payment: PaymentValidationRequest):
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/confirm-booking")
-async def confirm_booking(payment: PaymentValidationRequest):
+@app.post("/confirm-booking", response_model=schemas.BookingConfirmationResponse)
+async def confirm_booking(payment: schemas.PaymentValidationRequest):
     """Finalize booking after successful payment validation"""
     try:
         # First validate the payment
@@ -140,8 +127,9 @@ async def confirm_booking(payment: PaymentValidationRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error confirming booking: {str(e)}")
     
-@app.post("/refund")
-async def refund_booking(payment: RefundRequest):
+@app.post("/refund", response_model=schemas.RefundResponse)
+async def refund_booking(payment: schemas.RefundRequest):
+    """Refund a payment intent. Payment intent must have a valid payment method to refund to."""
     try:
         refund = stripe.Refund.create(
             payment_intent=payment.payment_intent_id,
@@ -152,6 +140,6 @@ async def refund_booking(payment: RefundRequest):
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.get("/health")  # Changed from "/heath"
+@app.get("/health", response_model=schemas.HealthResponse)
 def get_health():
     return {"status": "healthy", "stripe_configured": bool(stripe.api_key)}
