@@ -1,7 +1,6 @@
 package com.example.ticketinventory.service;
 
-import com.example.ticketinventory.model.Ticket;
-import com.example.ticketinventory.model.TicketStatus;
+import com.example.ticketinventory.model.*;
 import com.example.ticketinventory.repository.TicketRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -38,6 +37,7 @@ public class TicketService {
             ticketMap.put("event_id", ticket.getEventId());
             ticketMap.put("seat_number", ticket.getSeatNumber());
             ticketMap.put("status", ticket.getStatus().toString());
+            ticketMap.put("category", ticket.getCategory().toString());
             return ticketMap;
         }).collect(Collectors.toList());
 

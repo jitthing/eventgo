@@ -28,6 +28,10 @@ public class Ticket {
     @Column(name = "status", nullable = false)
     private TicketStatus status; // @ Ticket Status
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", nullable = false)
+    private TicketCategory category; // @ Ticket Category
+
     @Column(name = "reservation_expires")
     private LocalDateTime reservationExpires; // logic 10 minutes
 
