@@ -110,6 +110,7 @@ services:
   # STRIPE WRAPPER SERVICE
   # --------------------------------------------------------------------------
   stripe-service:
+    container_name: stripe-service
     build: ./stripe-service
     ports:
       - "8004:8000"
@@ -117,13 +118,32 @@ services:
       - ./stripe-service/.env
     volumes:
       - ./stripe-service:/app
+    depends_on:
+      stripe-db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
       timeout: 5s
       retries: 3
 
+  stripe-db:
+    container_name: stripe-db
+    image: postgres:14-alpine
+    env_file:
+      - ./stripe-service/.env
+    volumes:
+      - stripe-db-data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   auth-db-data:
   events-db-data:
   tickets-db-data:
+  stripe-db-data:
