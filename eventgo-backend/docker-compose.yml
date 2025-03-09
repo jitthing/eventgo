@@ -1,4 +1,4 @@
-version: "3.8"
+# version: "3.8"
 
 services:
   # --------------------------------------------------------------------------
@@ -128,37 +128,6 @@ services:
 
 
   # --------------------------------------------------------------------------
-  # NOTIFICATION SERVICE
-  # --------------------------------------------------------------------------
-  notification-service:
-    build: ./notification-service
-    ports:
-      - "8005:8000"
-    env_file:
-      - ./notification-service/.env
-    # volumes:
-    #   - ./notification-service:/src
-    depends_on:
-      - rabbitmq
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    restart: always
-    ports:
-      - "5672:5672"  # RabbitMQ default communication port
-      - "15672:15672" # RabbitMQ Management UI
-    env_file:
-      - ./notification-service/.env
-  # --------------------------------------------------------------------------
   # TICKET INVENTORY SERVICE (Spring Boot + MySQL)
   # --------------------------------------------------------------------------
   ticket-inventory:
@@ -193,18 +162,48 @@ services:
     networks:
       - app_network
 
-networks:
-  app_network:
+  # --------------------------------------------------------------------------
+  # NOTIFICATION SERVICE
+  # --------------------------------------------------------------------------
+  notification-service:
+    build: ./notification-service
+    ports:
+      - "8006:8000"
+    env_file:
+      - ./notification-service/.env
+    # volumes:
+    #   - ./notification-service:/src
+    depends_on:
+      - rabbitmq
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"  # RabbitMQ default communication port
+      - "15672:15672" # RabbitMQ Management UI
+    env_file:
+      - ./notification-service/.env
 
 volumes:
   auth-db-data:
   events-db-data:
   tickets-db-data:
+  ticket-inventory-data:
 
 
 networks:
-  app-network:
+  app_network:
     driver: bridge
-  ticket-inventory-data:
+  
 
 
