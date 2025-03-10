@@ -66,7 +66,7 @@ async def create_event(event: schemas.EventCreate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(db_event)
 
-    # Generate seats
+    """### Generate seats
     seats = []
     for i in range(1, event.capacity + 1):
         seat_number = f"{event.venue[:3].upper()}-{i}"  # Unique seat ID per venue
@@ -77,6 +77,7 @@ async def create_event(event: schemas.EventCreate, db: Session = Depends(get_db)
 
     db.add_all(seats)
     db.commit()
+    ###"""
 
     return db_event
 
