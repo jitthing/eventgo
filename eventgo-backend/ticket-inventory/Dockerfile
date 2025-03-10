@@ -1,14 +1,14 @@
-# Use a lightweight Java image
-FROM openjdk:21-jdk-slim
-
-# Set the working directory
+# Build Stage
+FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
+COPY pom.xml .
+RUN mvn dependency:go-offline
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Copy the built application JAR into the container
-COPY target/ticket-inventory-0.0.1-SNAPSHOT.jar app.jar
-
-# Expose the application port
+# Runtime Stage (lightweight)
+FROM openjdk:21-jdk-slim
+WORKDIR /app
+COPY --from=build /app/target/ticket-inventory-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8080
-
-# Command to run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
