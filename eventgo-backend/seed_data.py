@@ -25,6 +25,7 @@ from datetime import datetime, timedelta
 AUTH_SERVICE_URL = "http://localhost:8001"
 EVENTS_SERVICE_URL = "http://localhost:8002"
 TICKETS_SERVICE_URL = "http://localhost:8003"
+STRIPE_SERVICE_URL = "http://localhost:8004"
 
 
 # ---------------------------------------------------------------------------
