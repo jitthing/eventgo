@@ -1,0 +1,20 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="NotificationServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+    <option name="ALTERNATIVE_JRE_PATH" value="21-final" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+    <envs>
+      <env name="spring.rabbitmq.host" value="localhost" />
+      <env name="spring.rabbitmq.port" value="5672" />
+      <env name="spring.rabbitmq.username" value="rabbitmqusername" />
+      <env name="spring.rabbitmq.password" value="rabbitmqpassword" />
+      <env name="twilio.account_sid" value="AC9f7642aae661930ba3e269d802267866" />
+      <env name="twilio.auth_token" value="a9f19bd06b53de084a68e0887bc93f20" />
+      <env name="twilio.phone_number" value="+18066212678" />
+    </envs>
+    <module name="notification-service" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.event_go.notification_service.NotificationServiceApplication" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

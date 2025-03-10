@@ -10,6 +10,8 @@ import ticketBookingSystem.dto.TicketsService.TicketConfirmRequestDTO;
 import ticketBookingSystem.dto.TicketsService.TicketConfirmResponseDTO;
 import ticketBookingSystem.dto.TicketsService.TicketReserveRequestDTO;
 import ticketBookingSystem.dto.TicketsService.TicketReserveResponseDTO;
+import ticketBookingSystem.dto.notification.NotificationDTO;
+import ticketBookingSystem.service.NotificationProducer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -38,11 +40,14 @@ public class BookingServiceImpl implements ticketBookingSystem.service.BookingSe
 
     private final RestTemplate restTemplate;
 
+    private final NotificationProducer notificationProducer;
+
 //    private TicketReserveResponseDTO ticketReserveResponseDTO;
 //    private PaymentResponseDTO paymentResponseDTO;
 
 
-    public BookingServiceImpl() {
+    public BookingServiceImpl(NotificationProducer notificationProducer) {
+        this.notificationProducer = notificationProducer;
         this.restTemplate = new RestTemplate();
     }
 
@@ -167,6 +172,37 @@ public class BookingServiceImpl implements ticketBookingSystem.service.BookingSe
     }
 
     public String test(){
-        return "IM WORKING";
+        // Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        // if(authentication == null || !authentication.isAuthenticated()) {
+        //     String errorMessage = "User not authenticated.";
+        //     log.error(errorMessage);
+        // }
+
+        // // Store token as credentials in auth object
+        // String token = (String) authentication.getCredentials();
+        // if(token == null || token.isEmpty()) {
+        //     String errorMessage = "No valid token found.";
+        //     log.error(errorMessage);
+        // }
+
+        // // Prepare common headers to propagate token
+        // HttpHeaders headers = new HttpHeaders();
+        // headers.set("Authorization", "Bearer " + token);
+        
+        // // Your booking logic here...
+        System.out.println("Processing booking for: ");
+
+        // Prepare a notification event, e.g., informing the user
+        NotificationDTO event = new NotificationDTO();
+        // event.setRecipient(booking.getUserEmail());
+        event.setMessage("Your booking is confirmed!");
+
+        // Send the notification to the RabbitMQ queue
+        notificationProducer.sendNotification(event);
+
+        return "WORKING?";
+        
     }
+
+    
 }

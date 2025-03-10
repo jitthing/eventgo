@@ -22,6 +22,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(authorize -> authorize
                 // Permit any public endpoints if needed
                 .requestMatchers("/public/**").permitAll()
+                .requestMatchers("/bookings/test").permitAll()
+                .requestMatchers("/bookings/status").permitAll()
+                .requestMatchers("/bookings/initiateBooking").permitAll() 
+                // .anyRequest().permitAll()
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
             );
