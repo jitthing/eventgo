@@ -144,37 +144,37 @@ services:
   # --------------------------------------------------------------------------
   # TICKET INVENTORY SERVICE (Spring Boot + MySQL)
   # --------------------------------------------------------------------------
-  # ticket-inventory:
-  #   container_name: ticket-inventory
-  #   build: ./ticket-inventory
-  #   ports:
-  #     - "8005:8080"
-  #   # depends_on:
-  #   #   ticket-inventory-db:
-  #   #     condition: service_healthy
-  #   environment:
-  #     SPRING_DATASOURCE_URL: jdbc:mysql://ticket-inventory-db:3306/ticket_inventory
-  #     SPRING_DATASOURCE_USERNAME: user
-  #     SPRING_DATASOURCE_PASSWORD: password
-  #   restart: always
-  #   networks:
-  #     - app_network
+  ticket-inventory:
+    container_name: ticket-inventory
+    build: ./ticket-inventory
+    ports:
+      - "8005:8080"
+    # depends_on:
+    #   ticket-inventory-db:
+    #     condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://ticket-inventory-db:3306/ticket_inventory
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+    restart: always
+    networks:
+      - app_network
 
-  # ticket-inventory-db:
-  #   container_name: ticket-inventory-db
-  #   image: mysql:8
-  #   restart: always
-  #   environment:
-  #     MYSQL_ROOT_PASSWORD: rootpassword
-  #     MYSQL_DATABASE: ticket_inventory
-  #     MYSQL_USER: user
-  #     MYSQL_PASSWORD: password
-  #   ports:
-  #     - "3307:3306"
-  #   volumes:
-  #     - ticket-inventory-data:/var/lib/mysql
-  #   networks:
-  #     - app_network
+  ticket-inventory-db:
+    container_name: ticket-inventory-db
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: ticket_inventory
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3307:3306"
+    volumes:
+      - ticket-inventory-data:/var/lib/mysql
+    networks:
+      - app_network
 
   # --------------------------------------------------------------------------
   # NOTIFICATION SERVICE
