@@ -29,7 +29,7 @@ async function EventsList() {
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 			{events.map((event) => (
-				<div key={event.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+				<div key={event.event_id} className="bg-white rounded-lg shadow-md overflow-hidden">
 					<div className="relative h-48">
 						<Image src={event.image_url} alt={event.title} fill className="object-cover" />
 					</div>
@@ -39,7 +39,7 @@ async function EventsList() {
 						<p className="text-black mt-1">{formatDate(event.date)}</p>
 						<p className="text-black mt-1">{event.location}</p>
 						<p className="text-black font-medium mt-2">Starting at ${event.price}</p>
-						<Link href={`/events/${event.id}`} className="mt-4 block text-center bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
+						<Link href={`/events/${event.event_id}`} className="mt-4 block text-center bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
 							Get Tickets
 						</Link>
 					</div>
