@@ -40,10 +40,18 @@ async def health_check(db: Session = Depends(get_db)):
 async def list_events(is_featured: bool = False, db: Session = Depends(get_db)):
     """Retrieve all events or only featured ones based on query parameter."""
     query = db.query(models.Event)
+    """
     if is_featured:
         query = query.filter(models.Event.is_featured == True)
-    events = query.options(joinedload(models.Event.seats)).all()
+    #events = query.options(joinedload(models.Event.seats)).all()
+    query = db.query(models.Event)
+    """
+    if is_featured:
+        query = query.filter(models.Event.is_featured == True)
+
+    events = query.all()  # Removed joinedload(models.Event.seats)
     return events
+    
 
 
 # 🎟 Get event details of specific event
