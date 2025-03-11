@@ -36,7 +36,7 @@ class SeatResponse(BaseModel):
 """
 
 class EventResponse(EventBase):
-    id: int
+    event_id: int
     #seats: List[SeatResponse]  # Include seat data in event response
 
     class Config:

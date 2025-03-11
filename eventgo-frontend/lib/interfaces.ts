@@ -24,7 +24,7 @@ export interface Seat {
 }
 
 export interface Event {
-  id: number;
+  event_id: number;
   title: string;
   description: string;
   date: string; // ISO string; convert to Date if needed

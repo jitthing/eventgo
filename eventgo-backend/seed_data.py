@@ -210,7 +210,7 @@ def seed_events(num_events=6) -> list:
             )
             resp.raise_for_status()
             data = resp.json()
-            event_id = data["id"]
+            event_id = data["event_id"]
             created_ids.append(event_id)
             print(
                 f"[Events] Created event ID {event_id} "

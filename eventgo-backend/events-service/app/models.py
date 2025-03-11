@@ -13,7 +13,7 @@ class EventStatus(enum.Enum):
 class Event(Base):
     __tablename__ = "events"
 
-    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True)
     description = Column(String)
     date = Column(DateTime)
