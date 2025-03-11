@@ -23,7 +23,7 @@ class EventBase(BaseModel):
 class EventCreate(EventBase):
     pass
 
-
+"""
 class SeatResponse(BaseModel):
     id: int
     event_id: int
@@ -33,10 +33,11 @@ class SeatResponse(BaseModel):
     class Config:
         from_attributes = True
 
+"""
 
 class EventResponse(EventBase):
     id: int
-    seats: List[SeatResponse]  # Include seat data in event response
+    #seats: List[SeatResponse]  # Include seat data in event response
 
     class Config:
         from_attributes = True
