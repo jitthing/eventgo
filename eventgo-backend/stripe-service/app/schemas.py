@@ -54,3 +54,50 @@ class RefundResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     stripe_configured: bool
+
+# Split payment schemas
+class SplitPaymentParticipant(BaseModel):
+    email: str
+    name: str
+    amount: int
+
+class CreateSplitPaymentRequest(BaseModel):
+    event_id: str
+    seats: list[str]
+    currency: str = "usd"
+    participants: list[SplitPaymentParticipant]
+    description: str
+    redirect_url: str
+
+class PaymentLinkResponse(BaseModel):
+    payment_link_id: str
+    url: str
+    participant_email: str
+    amount: int
+    expires_at: int
+
+class SplitPaymentResponse(BaseModel):
+    split_payment_id: str
+    payment_links: list[PaymentLinkResponse]
+    total_amount: int
+    event_id: str
+    seats: list[str]
+
+class SplitPaymentStatusRequest(BaseModel):
+    split_payment_id: str
+
+class PaymentLinkStatus(BaseModel):
+    payment_link_id: str
+    participant_email: str
+    status: str  # 'unpaid', 'paid', 'expired'
+    amount: int
+
+class SplitPaymentStatusResponse(BaseModel):
+    split_payment_id: str
+    event_id: str
+    seats: list[str]
+    total_amount: int
+    status: str  # 'pending', 'completed', 'expired', 'partially_paid'
+    payment_links: list[PaymentLinkStatus]
+    amount_paid: int
+    amount_pending: int
