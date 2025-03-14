@@ -71,6 +71,7 @@ public class TicketService {
             ticket.setStatus(TicketStatus.reserved);
             ticket.setReservationId(reservationId);
             ticket.setReservationExpires(expirationTime);
+            ticket.setUserId(userId);
             reservedTickets.add(ticket);
         }
 
@@ -104,6 +105,7 @@ public class TicketService {
                 ticket.setStatus(TicketStatus.available);
                 ticket.setReservationExpires(null);
                 ticket.setReservationId(null);
+                ticket.setUserId(null);
             }
         }
 
@@ -113,7 +115,7 @@ public class TicketService {
     }
 
     @Transactional
-    public String confirmSeat(Long reservationId, Long bookingId) {
+    public String confirmSeat(Long reservationId, Long userId, String paymentIntentId) {
         List<Ticket> tickets = ticketRepository.findByReservationId(reservationId);
 
         if (tickets.isEmpty()) {
@@ -127,12 +129,13 @@ public class TicketService {
             ticket.setStatus(TicketStatus.sold);
             ticket.setReservationExpires(null);
             ticket.setReservationId(null);
-            ticket.setBookingId(bookingId);
-        }
+            ticket.setUserId(userId);
+            ticket.setPaymentIntentId(paymentIntentId);
 
+        }
         ticketRepository.saveAll(tickets);
 
-        return "Seat purchase confirmed for booking ID: " + bookingId;
+        return "Seat purchase confirmed for user ID: " + userId;
     }
 }
 
