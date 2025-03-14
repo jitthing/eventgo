@@ -44,6 +44,9 @@ public class Ticket {
     @Column(name = "user_id", nullable = true)
     private Long userId;
 
+    @Column(name = "price", nullable = false)
+    private Double price;
+
     @Column(name = "payment_intent_id", nullable = true, length = 255)
     private String paymentIntentId;
 

@@ -137,5 +137,70 @@ public class TicketService {
 
         return "Seat purchase confirmed for user ID: " + userId;
     }
+
+    @Transactional
+    public Map<String, Object> createTickets(Long eventId, List<Map<String, Object>> seatsData) {
+        List<Ticket> createdTickets = new ArrayList<>();
+        
+        for (Map<String, Object> seatData : seatsData) {
+            String seatNumber = (String) seatData.get("seatNumber");
+            String categoryStr = (String) seatData.get("category");
+            String statusStr = seatData.containsKey("status") ? 
+                (String) seatData.get("status") : "available";
+            Double price = seatData.containsKey("price") ? 
+                ((Number) seatData.get("price")).doubleValue() : 0.0;
+            
+            // Check if seat already exists for this event
+            Optional<Ticket> existingTicket = checkSeatAvailability(eventId, seatNumber);
+            if (existingTicket.isPresent()) {
+                continue; // Skip this seat as it already exists
+            }
+            
+            TicketCategory category;
+            try {
+                category = TicketCategory.valueOf(categoryStr.toLowerCase());
+            } catch (IllegalArgumentException e) {
+                category = TicketCategory.standard; // Default to standard if invalid category
+            }
+            
+            TicketStatus status;
+            try {
+                status = TicketStatus.valueOf(statusStr.toLowerCase());
+            } catch (IllegalArgumentException e) {
+                status = TicketStatus.available; // Default to available if invalid status
+            }
+            
+            Ticket ticket = new Ticket();
+            ticket.setEventId(eventId);
+            ticket.setSeatNumber(seatNumber);
+            ticket.setCategory(category);
+            ticket.setStatus(status); 
+            ticket.setPrice(price);
+            
+            createdTickets.add(ticket);
+        }
+        
+        // Save all tickets at once
+        List<Ticket> savedTickets = ticketRepository.saveAll(createdTickets);
+        
+        // Format response
+        List<Map<String, Object>> ticketList = savedTickets.stream().map(ticket -> {
+            Map<String, Object> ticketMap = new HashMap<>();
+            ticketMap.put("ticketId", ticket.getTicketId());
+            ticketMap.put("eventId", ticket.getEventId());
+            ticketMap.put("seatNumber", ticket.getSeatNumber());
+            ticketMap.put("status", ticket.getStatus().toString());
+            ticketMap.put("category", ticket.getCategory().toString());
+            ticketMap.put("price", ticket.getPrice());
+            return ticketMap;
+        }).collect(Collectors.toList());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("message", "Created " + savedTickets.size() + " tickets for event ID: " + eventId);
+        response.put("data", ticketList);
+        
+        return response;
+    }
 }
 
