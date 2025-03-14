@@ -2,8 +2,8 @@ package ticketBookingSystem.service.impl;
 
 import ticketBookingSystem.dto.Booking.BookingDetailsResponseDTO;
 import ticketBookingSystem.dto.Booking.CancelBookingResponseDTO;
-import ticketBookingSystem.dto.Booking.InitiateBookingRequestDTO;
-import ticketBookingSystem.dto.Booking.InitiateBookingResponseDTO;
+import ticketBookingSystem.dto.Booking.ProcessBookingRequestDTO;
+import ticketBookingSystem.dto.Booking.ProcessBookingResponseDTO;
 import ticketBookingSystem.dto.Payment.PaymentRequestDTO;
 import ticketBookingSystem.dto.Payment.PaymentResponseDTO;
 import ticketBookingSystem.dto.TicketsService.TicketConfirmRequestDTO;
@@ -51,19 +51,20 @@ public class BookingServiceImpl implements ticketBookingSystem.service.BookingSe
         this.restTemplate = new RestTemplate();
     }
 
-    public InitiateBookingResponseDTO initiateBooking(InitiateBookingRequestDTO request) {
-        UUID bookingID = UUID.randomUUID();
-
+    public ProcessBookingResponseDTO processBooking(ProcessBookingRequestDTO request) {
+        // UUID bookingID = UUID.randomUUID();
         // TicketReserveRequestDTO ticketReserveRequestDTO = null;
 
         try {
+
+            // STEP 0: Auth layer, would be moved into the API layer
 
             // Retrieve token from securityContext
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if(authentication == null || !authentication.isAuthenticated()) {
                 String errorMessage = "User not authenticated.";
                 log.error(errorMessage);
-                return new InitiateBookingResponseDTO("FAILED", bookingID.toString(), errorMessage);
+                return new ProcessBookingResponseDTO("FAILED", errorMessage);
             }
 
             // Store token as credentials in auth object
@@ -71,7 +72,7 @@ public class BookingServiceImpl implements ticketBookingSystem.service.BookingSe
             if(token == null || token.isEmpty()) {
                 String errorMessage = "No valid token found.";
                 log.error(errorMessage);
-                return new InitiateBookingResponseDTO("FAILED", bookingID.toString(), errorMessage);
+                return new ProcessBookingResponseDTO("FAILED", errorMessage);
             }
 
             // Prepare common headers to propagate token
@@ -80,63 +81,23 @@ public class BookingServiceImpl implements ticketBookingSystem.service.BookingSe
 
 
 
-            // STEP 1: Check if ticket is available + Reserve ticket
-            // TicketReserveRequestDTO ticketReserveRequestDTO = new TicketReserveRequestDTO(
-
-
-            // ticketReserveRequestDTO = new TicketReserveRequestDTO(
-
-                    // request.getEventId(),
-                    // request.getSeatsId()
-                    // ,request.getUserId(),
-                    // bookingID.toString()
-            // );
-            
-            String reserveTicketsServiceUrl = ticketsServiceUrl + "/tickets/reserve";
-
-            
-            // TicketReserveResponseDTO ticketReserveResponseDTO = restTemplate.postForObject(
-            //         reserveTicketsServiceUrl, ticketReserveRequestDTO, TicketReserveResponseDTO.class
-            // );
-
-
-            // Directly send the list of seat IDs, not a wrapped object.
-            HttpEntity<List<String>> reserveEntity = new HttpEntity<>(request.getSeatsId(), headers);
-            ResponseEntity<TicketReserveResponseDTO> reserveResponse = restTemplate.exchange(
-                reserveTicketsServiceUrl, HttpMethod.POST, reserveEntity, TicketReserveResponseDTO.class
-            );
-            TicketReserveResponseDTO ticketReserveResponseDTO = reserveResponse.getBody();
-
-
-            if (ticketReserveResponseDTO == null) {
-                String errorMessage = "No response from ticket inventory service. Failed to reserve ticket.";
-                log.error(errorMessage);
-                return new InitiateBookingResponseDTO("FAILED", bookingID.toString(), errorMessage);
-            }
-
-            // STEP 2: Initiate payment
-            PaymentRequestDTO paymentRequestDTO = new PaymentRequestDTO(
-                    ticketReserveResponseDTO.getAmount(),
-                    ticketReserveResponseDTO.getCurrency(),
-                    ticketReserveResponseDTO.getEventId(),
-                    ticketReserveResponseDTO.getSeatsId()
-            );
-            String paymentStripeServiceUrl = stripeServiceUrl + "/create-payment-intent";
+            // STEP 1: Check payment status
+            String paymentIntentId = request.getPaymentIntentId();
+            String paymentStripeServiceUrl = stripeServiceUrl + "/create-payment-intent/" + paymentIntentId;
             PaymentResponseDTO paymentResponseDTO = restTemplate.postForObject(
-                    paymentStripeServiceUrl, paymentRequestDTO, PaymentResponseDTO.class
+                    paymentStripeServiceUrl, paymentIntentId, PaymentResponseDTO.class
             );
             if (paymentResponseDTO == null) {
                 String errorMessage = "No response from payment service. Failed to pay.";
                 log.error(errorMessage);
-                return new InitiateBookingResponseDTO("FAILED", bookingID.toString(), errorMessage);
+                return new ProcessBookingResponseDTO("FAILED",  errorMessage);
             }
 
             // STEP 3: Confirm ticket (from reserve)
             TicketConfirmRequestDTO ticketConfirmRequestDTO = new TicketConfirmRequestDTO(
                     request.getEventId(),
                     request.getSeatsId(),
-                    request.getUserId(),
-                    bookingID.toString()  // reusing the same booking ID for consistency
+                    request.getUserId()
             );
 
             String confirmTicketsServiceUrl = ticketsServiceUrl + "/purchase";
@@ -147,16 +108,16 @@ public class BookingServiceImpl implements ticketBookingSystem.service.BookingSe
             if (ticketConfirmResponseDTO == null) {
                 String errorMessage = "No response from ticket inventory service. Failed to confirm tickets.";
                 log.error(errorMessage);
-                return new InitiateBookingResponseDTO("FAILED", bookingID.toString(), errorMessage);
+                return new ProcessBookingResponseDTO("FAILED", errorMessage);
             }
 
             // All steps succeeded.
-            return new InitiateBookingResponseDTO("CONFIRMED", bookingID.toString(), "");
+            return new ProcessBookingResponseDTO("CONFIRMED", "");
 
         } catch (Exception e) {
             String errorMessage = e.getMessage();
             log.error(errorMessage, e);
-            return new InitiateBookingResponseDTO("FAILED", bookingID.toString(), errorMessage);
+            return new ProcessBookingResponseDTO("FAILED", errorMessage);
             // return new InitiateBookingResponseDTO("FAILED", bookingID.toString(), "NOPE");
 
         }

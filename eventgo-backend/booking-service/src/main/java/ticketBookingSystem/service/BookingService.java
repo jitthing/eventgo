@@ -2,8 +2,9 @@ package ticketBookingSystem.service;
 
 import ticketBookingSystem.dto.Booking.BookingDetailsResponseDTO;
 import ticketBookingSystem.dto.Booking.CancelBookingResponseDTO;
-import ticketBookingSystem.dto.Booking.InitiateBookingRequestDTO;
-import ticketBookingSystem.dto.Booking.InitiateBookingResponseDTO;
+import ticketBookingSystem.dto.Booking.ProcessBookingRequestDTO;
+import ticketBookingSystem.dto.Booking.ProcessBookingResponseDTO;
+
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -11,7 +12,7 @@ import java.util.UUID;
 
 public interface BookingService {
 
-    InitiateBookingResponseDTO initiateBooking(InitiateBookingRequestDTO request);
+    ProcessBookingResponseDTO processBooking(ProcessBookingRequestDTO request);
 
     BookingDetailsResponseDTO getBookingDetails(UUID bookingId);
 

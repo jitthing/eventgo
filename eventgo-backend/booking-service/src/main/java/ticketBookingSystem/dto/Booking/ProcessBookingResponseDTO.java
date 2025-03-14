@@ -7,8 +7,7 @@ import lombok.*;
 @AllArgsConstructor
 @Getter
 @Setter
-public class InitiateBookingResponseDTO {
+public class ProcessBookingResponseDTO {
     private String status;
-    private String bookingId;
     private String errorMessage;
 }

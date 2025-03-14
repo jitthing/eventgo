@@ -8,15 +8,15 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-//@Getter
-//@Setter
-public class InitiateBookingRequestDTO {
+@Getter
+@Setter
+public class ProcessBookingRequestDTO {
 
     private String eventId;
     private List<String> seatsId;
     private String userId;
+    private String paymentIntentId;
 
-    private PaymentRequestDTO paymentDetailsDTO;
 
 
 }
