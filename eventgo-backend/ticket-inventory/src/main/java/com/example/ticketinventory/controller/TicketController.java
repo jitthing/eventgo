@@ -46,11 +46,12 @@ public class TicketController {
     @PostMapping("/confirm")
     public ResponseEntity<Map<String, String>> confirmSeat(@RequestBody Map<String, Object> request) {
         Long reservationId = ((Number) request.get("reservation_id")).longValue();
-        Long bookingId = ((Number) request.get("booking_id")).longValue();
+        Long userId = ((Number) request.get("user_id")).longValue();
+        String paymentIntentId = (String) request.get("payment_intent_id");
 
         return ResponseEntity.ok(Map.of(
                 "status", "success",
-                "message", ticketService.confirmSeat(reservationId, bookingId)
+                "message", ticketService.confirmSeat(reservationId, userId, paymentIntentId)
         ));
     }
 }
