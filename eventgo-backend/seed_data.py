@@ -26,6 +26,7 @@ AUTH_SERVICE_URL = "http://localhost:8001"
 EVENTS_SERVICE_URL = "http://localhost:8002"
 TICKETS_SERVICE_URL = "http://localhost:8003"
 STRIPE_SERVICE_URL = "http://localhost:8004"
+TICKET_INVENTORY_URL = "http://localhost:8005"
 
 
 # ---------------------------------------------------------------------------
@@ -298,6 +299,72 @@ def reserve_and_purchase_some_seats(
     except Exception as e:
         print(f"[Tickets] Failed to purchase seats for event {event_id}: {e}")
 
+# ---------------------------------------------------------------------------
+# 6) Populate the ticket inventory
+# ---------------------------------------------------------------------------
+def generate_seats(event_id, capacity):
+    """
+    Generates a list of seats dynamically based on event capacity.
+    
+    - First 20% seats → VIP
+    - Remaining seats → Standard
+    """
+    seats = []
+    vip_threshold = int(capacity * 0.2)  # First 20% seats are VIP
+
+    for i in range(1, capacity + 1):
+        seat_category = "VIP" if i <= vip_threshold else "standard"
+        seat_number = f"{chr(65 + (i - 1) // 10)}{(i - 1) % 10 + 1}"  # Example: A1, A2, ..., B1, B2
+
+        seats.append({
+            "ticketId": i + (event_id * 100),  # Unique ticket ID based on event
+            "seatNumber": seat_number,
+            "category": seat_category,
+            "status": "available"
+        })
+    
+    return seats
+
+
+def seed_inventory():
+    """
+    Dynamically seeds ticket inventory for multiple events based on capacity.
+    """
+    events_with_capacity = [
+        {"eventId": 1, "capacity": 50},
+        {"eventId": 2, "capacity": 55},
+        {"eventId": 3, "capacity": 60},
+        {"eventId": 4, "capacity": 150},
+        {"eventId": 5, "capacity": 50},
+        {"eventId": 6, "capacity": 20}
+    ]
+
+    # Generate events dynamically
+    payload = {
+        "events": [],
+        "categoryPrices": [
+            {"category": "VIP", "price": 100.00},
+            {"category": "standard", "price": 50.00}
+        ]
+    }
+
+    for event in events_with_capacity:
+        event_id = event["eventId"]
+        capacity = event["capacity"]
+        
+        payload["events"].append({
+            "eventId": event_id,
+            "seats": generate_seats(event_id, capacity)
+        })
+
+    try:
+        response = requests.post(f"{TICKET_INVENTORY_URL}/inventory/create", json=payload, timeout=10)
+        response.raise_for_status()
+        print("✅ Inventory successfully populated with dynamic events and seats!")
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Failed to populate inventory: {e}")
+
+
 
 # ---------------------------------------------------------------------------
 # MAIN SCRIPT
@@ -307,7 +374,9 @@ def main():
     print("=== 1) Checking health of all microservices ===")
     wait_for_health("Auth-Service", AUTH_SERVICE_URL)
     wait_for_health("Events-Service", EVENTS_SERVICE_URL)
-    wait_for_health("Tickets-Service", TICKETS_SERVICE_URL)
+    # wait_for_health("Tickets-Service", TICKETS_SERVICE_URL)
+    wait_for_health("Ticket-Inventory", TICKET_INVENTORY_URL)
+
 
     # 2) Create 3 users in Auth
     print("\n=== 2) Creating mock users in Auth-Service ===")
@@ -330,6 +399,11 @@ def main():
         reserve_and_purchase_some_seats(
             eid, user_token, reserve_count=5, purchase_count=2
         )
+
+    # 6) Populate the ticket inventory
+    print("\n=== 6) Populating the inventory database ===")
+    seed_inventory()
+
 
     print("\n✅ Seeding complete! Check your DBs and service logs to verify.")
 

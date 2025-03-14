@@ -157,6 +157,11 @@ services:
     restart: always
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   ticket-inventory-db:
     container_name: ticket-inventory-db
