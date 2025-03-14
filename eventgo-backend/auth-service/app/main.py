@@ -50,18 +50,34 @@ async def health_check(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/register", response_model=schemas.UserResponse)
-async def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+@app.post("/register")
+async def register_user(user: schemas.UserCreate, response: Response, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    # Hash the password and create the user
     hashed_password = models.User.get_password_hash(user.password)
     db_user = models.User(email=user.email, hashed_password=hashed_password)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    return db_user
+
+    # ✅ Generate JWT token
+    access_token = create_access_token(data={"sub": db_user.email})
+
+    # ✅ Set token as HTTP-only cookie
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {access_token}",
+        httponly=True,
+        samesite="lax",  # Use "none" with "secure=True" for production
+        secure=False,  # Use secure=True in production with HTTPS
+        path="/"
+    )
+
+    return {"message": "User registered successfully", "access_token": access_token, "token_type": "bearer"}
+
 
 
 @app.post("/login", response_model=schemas.Token)
@@ -90,6 +106,7 @@ async def login(
         # secure=True,  # ✅ Necessary to comment out as we're developing locally with http without https
         # samesite="Strict",
         samesite="lax",  # i changed this to lax, i think "none" required secure to be True
+        secure=False,
         path="/"
     )
 
