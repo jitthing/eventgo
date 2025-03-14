@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { registerUser, loginUser, fetchUser } from "@/lib/auth";
+import { useAuth } from "@/context/AuthContext"; // ✅ Import AuthContext
 
 export default function RegisterPage() {
 	const router = useRouter();
+	const { setUser } = useAuth(); // ✅ Get setUser from AuthContext
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
@@ -14,12 +16,13 @@ export default function RegisterPage() {
 	useEffect(() => {
 		async function checkSession() {
 			try {
-				await fetchUser();
-				router.push("/profile"); // NEW: Redirect if already authenticated
+				const userData = await fetchUser();
+				setUser(userData); // ✅ Ensure global state updates if already authenticated
+				router.push("/profile");
 			} catch {}
 		}
 		checkSession();
-	}, [router]);
+	}, [router, setUser]);
 
 	async function handleRegister(event: React.FormEvent) {
 		event.preventDefault();
@@ -31,15 +34,16 @@ export default function RegisterPage() {
 		}
 
 		try {
-			// Call registerUser; the backend sets the HTTP-only cookie automatically
 			await registerUser(email, password);
-			// No need to save any token manually
+			// ✅ Auto-login after registration
+			await loginUser(email, password);
+			const userData = await fetchUser(); // ✅ Fetch user after login
+			setUser(userData); // ✅ Update global auth state
 			router.push("/profile");
 		} catch (err: any) {
 			setError(err.message || "Failed to register.");
 		}
 	}
-
 	return (
 		<div className="min-h-screen bg-white flex items-center justify-center">
 			<div className="max-w-md w-full bg-white shadow-md rounded-lg p-6">
