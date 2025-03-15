@@ -38,6 +38,16 @@ public class Ticket {
     @Column(name = "reservation_id", nullable = true)
     private Long reservationId;
 
-    @Column(name = "booking_id", nullable = true)
-    private Long bookingId; // retrieved from booking service
+//    @Column(name = "booking_id", nullable = true)
+//    private Long bookingId;
+
+    @Column(name = "user_id", nullable = true)
+    private Long userId;
+
+    @Column(name = "price", nullable = false)
+    private Double price;
+
+    @Column(name = "payment_intent_id", nullable = true, length = 255)
+    private String paymentIntentId;
+
 }

@@ -1,37 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { fetchUser, logoutUser } from "@/lib/auth";
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
 const Navbar = () => {
 	const router = useRouter();
-	const [user, setUser] = useState<any>(null);
-
-	useEffect(() => {
-		async function checkAuth() {
-			try {
-				const userData = await fetchUser();
-				setUser(userData);
-			} catch {
-				setUser(null);
-			}
-		}
-		checkAuth();
-	}, []);
-
-	const handleLogout = async () => {
-		await logoutUser();
-		router.push("/login");
-	};
+	const { user, loading } = useAuth();
 
 	return (
 		<nav className="bg-white shadow-lg">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="flex justify-between items-center h-16">
-					{" "}
-					{/* ✅ Fix alignment */}
 					{/* Brand Logo */}
 					<Link href="/" className="text-2xl font-bold text-black flex items-center space-x-2">
 						<span role="img" aria-label="ticket">
@@ -39,13 +19,14 @@ const Navbar = () => {
 						</span>
 						<span>EventGo</span>
 					</Link>
-					{/* Navigation Links */}
+
+					{/* Authentication & Profile */}
 					<div className="flex items-center space-x-6">
-						{" "}
-						{/* ✅ Added flex alignment */}
-						{user ? (
-							<button onClick={handleLogout} className="text-black font-medium hover:text-blue-600 transition">
-								Logout
+						{loading ? (
+							<div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse" />
+						) : user ? (
+							<button onClick={() => router.push("/profile")} className="flex items-center">
+								<img src={user?.avatar || "https://api.dicebear.com/6.x/initials/svg?seed=User"} alt="Profile Avatar" className="w-10 h-10 rounded-full border border-gray-300 cursor-pointer" />
 							</button>
 						) : (
 							<>
