@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { getAvailableSeats } from "@/lib/api";
 import { Seat, TicketStatus } from "@/lib/interfaces";
 
-export default function SeatSelection({ eventId }: { eventId: number }) {
+export default function SeatSelection({ eventId, selectedSeats, toggleSeat }: { eventId: number; selectedSeats: number[]; toggleSeat: (seatId: number) => void }) {
 	const [availableSeats, setAvailableSeats] = useState<Seat[]>([]);
-	const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
@@ -25,10 +23,6 @@ export default function SeatSelection({ eventId }: { eventId: number }) {
 		fetchSeats();
 	}, [eventId]);
 
-	const toggleSeat = (seatId: number) => {
-		setSelectedSeats((prev) => (prev.includes(seatId) ? prev.filter((s) => s !== seatId) : [...prev, seatId]));
-	};
-
 	if (loading) return <p className="text-gray-600 text-center">Loading available seats...</p>;
 	if (error) return <p className="text-red-500 text-center">{error}</p>;
 
@@ -36,6 +30,8 @@ export default function SeatSelection({ eventId }: { eventId: number }) {
 		<div className="mt-6 p-6 bg-gray-100 rounded-lg">
 			<h3 className="text-lg text-black font-semibold mb-4">🎟️ Select Your Seats</h3>
 
+			{/* Show selected seat count */}
+			<p className="text-sm text-gray-600 mb-3">Selected Seats: {selectedSeats.length > 0 ? selectedSeats.map((seatId) => availableSeats.find((seat) => seat.id === seatId)?.seat_number || `Seat ${seatId}`).join(", ") : "None"}</p>
 			{/* Render seat buttons */}
 			<div className="grid grid-cols-10 gap-2">
 				{availableSeats.map((seat) => {
@@ -56,16 +52,6 @@ export default function SeatSelection({ eventId }: { eventId: number }) {
 					);
 				})}
 			</div>
-
-			{selectedSeats.length > 0 && <p className="mt-3 text-sm text-gray-600">Selected Seats: {selectedSeats.join(", ")}</p>}
-
-			<Link
-				href={`/checkout?eventId=${eventId}&seats=${selectedSeats.join(",")}`}
-				className={`mt-6 block text-center bg-blue-600 text-white font-medium py-3 px-8 rounded-md 
-          hover:bg-blue-700 transition-colors ${selectedSeats.length === 0 ? "opacity-50 pointer-events-none" : ""}`}
-			>
-				Buy Tickets ({selectedSeats.length} Selected)
-			</Link>
 		</div>
 	);
 }
