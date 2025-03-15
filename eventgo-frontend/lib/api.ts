@@ -44,8 +44,42 @@ export async function getFeaturedEvents(): Promise<Event[]> {
   return transformedEvents;
 }
 
+export async function getAllEvents(): Promise<Event[]> {
+  const response = await fetch(`${EVENTS_API_URL}/events`); // Fetch all events
+  if (!response.ok) {
+    throw new Error("Failed to fetch events");
+  }
+  const events: Event[] = await response.json();
+
+  // Transform relative image URLs to full URLs
+  return events.map((event) => {
+    if (event.image_url && !event.image_url.startsWith("http")) {
+      event.image_url = `${EVENTS_API_URL}/events/${event.event_id}/image`;
+    }
+    return event;
+  });
+}
+
+// temp only
+function generateMockSeats(count: number): Seat[] {
+  const categories = ["VIP", "Regular", "Economy"];
+  const statuses = [TicketStatus.AVAILABLE, TicketStatus.RESERVED, TicketStatus.SOLD];
+
+  return Array.from({ length: count }, (_, index) => ({
+    id: index + 1,
+    seat_number: `${String.fromCharCode(65 + Math.floor(index / 10))}${(index % 10) + 1}`, // Fix: Removed "Row"
+    category: categories[Math.floor(Math.random() * categories.length)],
+    status: statuses[Math.floor(Math.random() * statuses.length)],
+  }));
+}
+
 
 export async function getAvailableSeats(eventId: number): Promise<Seat[]> {
+  const mockSeats = generateMockSeats(25); // Generate 10 mock seats
+
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  return mockSeats;
   // 1) Call the TICKETS-SERVICE endpoint that already merges seat + status
   const response = await fetch(`${TICKETS_API_URL}/events/${eventId}/seats`);
   if (!response.ok) {

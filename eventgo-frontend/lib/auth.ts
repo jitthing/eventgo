@@ -50,5 +50,7 @@ export async function debugCookies() {
     method: "GET",
     credentials: "include",
   });
-  return response.json();
+  const data = await response.json();
+  console.log("Debug Cookies:", data);
+  return data;
 }
