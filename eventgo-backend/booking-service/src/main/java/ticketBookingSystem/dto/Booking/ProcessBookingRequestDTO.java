@@ -16,6 +16,7 @@ public class ProcessBookingRequestDTO {
     private List<String> seatsId;
     private String userId;
     private String paymentIntentId;
+    private String reservationId;
 
 
 

@@ -81,26 +81,31 @@ public class BookingServiceImpl implements ticketBookingSystem.service.BookingSe
 
 
 
-            // STEP 1: Check payment status
-            String paymentIntentId = request.getPaymentIntentId();
-            String paymentStripeServiceUrl = stripeServiceUrl + "/create-payment-intent/" + paymentIntentId;
+            // STEP 1: Validate payment status
+            PaymentRequestDTO paymentRequestDTO = new PaymentRequestDTO(
+                request.getEventId(),
+                request.getSeatsId(),
+                request.getPaymentIntentId()
+            );
+            String paymentStripeServiceUrl = stripeServiceUrl + "/validate-payment";
             PaymentResponseDTO paymentResponseDTO = restTemplate.postForObject(
-                    paymentStripeServiceUrl, paymentIntentId, PaymentResponseDTO.class
+                    paymentStripeServiceUrl, paymentRequestDTO, PaymentResponseDTO.class
             );
             if (paymentResponseDTO == null) {
-                String errorMessage = "No response from payment service. Failed to pay.";
+                String errorMessage = "No response from payment service. Failed to validate payment.";
                 log.error(errorMessage);
                 return new ProcessBookingResponseDTO("FAILED",  errorMessage);
             }
 
-            // STEP 3: Confirm ticket (from reserve)
+            // STEP 2: Confirm ticket (from reserve)
             TicketConfirmRequestDTO ticketConfirmRequestDTO = new TicketConfirmRequestDTO(
-                    request.getEventId(),
-                    request.getSeatsId(),
-                    request.getUserId()
+                    request.getUserId(),
+                    request.getReservationId(),
+                    request.getPaymentIntentId()
+
             );
 
-            String confirmTicketsServiceUrl = ticketsServiceUrl + "/purchase";
+            String confirmTicketsServiceUrl = ticketsServiceUrl + "/confirm";
 
             TicketConfirmResponseDTO ticketConfirmResponseDTO = restTemplate.postForObject(
                     confirmTicketsServiceUrl, ticketConfirmRequestDTO, TicketConfirmResponseDTO.class
@@ -118,8 +123,6 @@ public class BookingServiceImpl implements ticketBookingSystem.service.BookingSe
             String errorMessage = e.getMessage();
             log.error(errorMessage, e);
             return new ProcessBookingResponseDTO("FAILED", errorMessage);
-            // return new InitiateBookingResponseDTO("FAILED", bookingID.toString(), "NOPE");
-
         }
     }
 
@@ -157,6 +160,9 @@ public class BookingServiceImpl implements ticketBookingSystem.service.BookingSe
         NotificationDTO event = new NotificationDTO();
         // event.setRecipient(booking.getUserEmail());
         event.setMessage("Your booking is confirmed!");
+        event.setRecipientEmailAddress("taneeherng@gmail.com");
+        event.setSubject("Test");
+        // event.setRecipientPhoneNumber("+6596327542");
 
         // Send the notification to the RabbitMQ queue
         notificationProducer.sendNotification(event);

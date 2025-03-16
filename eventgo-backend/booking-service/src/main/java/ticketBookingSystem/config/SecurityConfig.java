@@ -25,6 +25,9 @@ public class SecurityConfig {
                 .requestMatchers("/bookings/test").permitAll()
                 .requestMatchers("/bookings/status").permitAll()
                 .requestMatchers("/bookings/initiateBooking").permitAll() 
+                // .requestMatchers("/bookings/process-booking").authenticated()
+                .requestMatchers("/bookings/process-booking").permitAll()
+
                 // .anyRequest().permitAll()
                 // All other endpoints require authentication
                 .anyRequest().authenticated()

@@ -6,5 +6,7 @@ import org.springframework.stereotype.Service;
 @Service
 public interface NotificationService {
 
-    void sendNotification(NotificationEvent notification);
+    // void sendSMSNotification(NotificationEvent notification);
+
+    void sendEmailNotification(NotificationEvent notification);
 }
