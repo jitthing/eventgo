@@ -85,7 +85,7 @@ services:
     build: ./tickets-service
     ports:
       - "8003:8000"
-      
+
     env_file:
       - ./tickets-service/.env
     depends_on:
@@ -128,8 +128,8 @@ services:
       - "8004:8000"
     env_file:
       - ./stripe-service/.env
-    volumes:
-      - ./stripe-service:/app
+    # volumes:
+    #   - ./stripe-service:/app
     networks:
       - app_network
     healthcheck:
@@ -137,7 +137,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-
 
   # --------------------------------------------------------------------------
   # TICKET INVENTORY SERVICE (Spring Boot + MySQL)
@@ -192,7 +191,7 @@ services:
     ports:
       - "8006:8000"
     # env_file:
-      # - ./notification-service/.env
+    # - ./notification-service/.env
     environment:
       - TWILIO_ACCOUNT_SID=AC9f7642aae661930ba3e269d802267866
       - TWILIO_AUTH_TOKEN=a9f19bd06b53de084a68e0887bc93f20
@@ -213,19 +212,18 @@ services:
       timeout: 5s
       retries: 3
 
-  
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
     restart: always
     ports:
-      - "5672:5672"  # RabbitMQ default communication port
+      - "5672:5672" # RabbitMQ default communication port
       - "15672:15672" # RabbitMQ Management UI
     # env_file:
-      # - ./notification-service/.env
+    # - ./notification-service/.env
     environment:
-    #   - spring.rabbitmq.host=rabbitmq
-    #   - spring.rabbitmq.port=5672
+      #   - spring.rabbitmq.host=rabbitmq
+      #   - spring.rabbitmq.port=5672
       - RABBITMQ_DEFAULT_USER=rabbitmqusername
       - RABBITMQ_DEFAULT_PASS=rabbitmqpassword
     networks:
@@ -261,16 +259,28 @@ services:
       timeout: 5s
       retries: 3
 
+  # --------------------------------------------------------------------------
+  # PARTY BOOKING SERVICE
+  # --------------------------------------------------------------------------
+  party-booking-service:
+    build: ./party-booking-service
+    ports:
+      - "8010:8000"
+    env_file:
+      - ./party-booking-service/.env
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 volumes:
   auth-db-data:
   events-db-data:
   tickets-db-data:
   ticket-inventory-data:
 
-
 networks:
   app_network:
     driver: bridge
-  
-
-
