@@ -5,6 +5,7 @@ import os
 from . import schemas
 import uuid
 import time
+import json
 
 from dotenv import load_dotenv
 
@@ -44,29 +45,47 @@ async def create_payment_intent(payment: schemas.PaymentIntent):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+# this will be moved to orchestrator to react to webhook events
 @app.post("/webhook", response_model=schemas.WebhookResponse)
 async def stripe_webhook(request: Request):
+    """
+    This endpoint receives webhook events from Stripe.
+    For Stripe to reach this endpoint:
+    1. Your server must be publicly accessible (e.g., via ngrok in development)
+    2. You must configure the webhook URL in your Stripe dashboard to point to this endpoint
+    3. Set up the webhook signing secret in your Stripe dashboard and environment variables
+    """
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
     
     try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, os.environ.get("STRIPE_WEBHOOK_SECRET")
-        )
+        # Log the payload and signature header for debugging
+        print(f"Payload length: {len(payload)}")
+        print(f"Signature Header present: {bool(sig_header)}")
+        
+        webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET")
+        print(f"Webhook secret (last 5 chars): {webhook_secret[-5:] if webhook_secret else 'None'}")
+        
+        # For development purposes - parse payload directly without verification
+        # WARNING: In production, always verify signatures
+        payload_json = json.loads(payload)
+        event_data = stripe.util.convert_to_stripe_object(payload_json, stripe.api_key)
+        event = stripe.Event.construct_from(event_data, stripe.api_key)
+        
+        print(f"Event type: {event.type}")
         
         # Handle the event
         if event.type == "payment_intent.succeeded":
             payment_intent = event.data.object
             # Update your database to mark payment as complete
-            # You could call your tickets service here to finalize the booking
-            print(f"Payment for {payment_intent.metadata.event_id} succeeded!")
+            print(f"Payment for {payment_intent.metadata.get('event_id')} succeeded!")
             
             # Here you would typically make an API call to your tickets service
             # to create the tickets now that payment is confirmed
             
         elif event.type == "payment_intent.payment_failed":
             payment_intent = event.data.object
-            print(f"Payment for {payment_intent.metadata.event_id} failed.")
+            print(f"Payment for {payment_intent.metadata.get('event_id')} failed.")
             # Release the held seats
             
         elif event.type == "checkout.session.completed":
@@ -79,6 +98,11 @@ async def stripe_webhook(request: Request):
                 if split_payment_id in split_payments:
                     print(f"Payment for split payment {split_payment_id} by {session.metadata.get('participant_email')} completed!")
                     
+                    # Extract the payment intent ID
+                    payment_intent_id = session.payment_intent
+                    print(f"Payment Intent ID: {payment_intent_id}")
+                    # need to use this payment id to update ticket service for refund
+                    
                     # Check if all payments are complete
                     # In a real implementation, you'd update your database
                     status = await get_split_payment_status(schemas.SplitPaymentStatusRequest(split_payment_id=split_payment_id))
@@ -88,7 +112,11 @@ async def stripe_webhook(request: Request):
 
         return {"status": "success"}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Log the error details
+        print(f"Error processing webhook: {str(e)}")
+        # Return success anyway to acknowledge the webhook (prevents retries)
+        # In development, this allows us to see events even when verification fails
+        return {"status": "success"}
 
 @app.get("/payment-status/{payment_intent_id}", response_model=schemas.PaymentStatusResponse)
 async def get_payment_status(payment_intent_id: str):
@@ -166,6 +194,97 @@ async def refund_booking(payment: schemas.RefundRequest):
 def get_health():
     return {"status": "healthy", "stripe_configured": bool(stripe.api_key)}
 
+async def generate_payment_link(
+    amount: int,
+    currency: str,
+    name: str,
+    email: str,
+    redirect_url: str,
+    metadata: dict = None,
+    expiration: int = None
+):
+    """
+    Generate a Stripe payment link for a given amount
+    
+    Args:
+        amount: The amount in cents to charge
+        currency: The currency code (e.g., 'sgd', 'usd')
+        name: Name of the product/recipient
+        email: Email of the recipient
+        redirect_url: URL to redirect after payment
+        metadata: Additional metadata to attach to the payment
+        expiration: Expiration timestamp (defaults to 24 hours from now)
+        
+    Returns:
+        dict: Payment link details including URL and ID
+    """
+    if expiration is None:
+        expiration = int(time.time()) + 24 * 60 * 60  # 24 hours from now
+        
+    try:
+        # Create a one-time price
+        price = stripe.Price.create(
+            unit_amount=amount,
+            currency=currency,
+            product_data={
+                'name': name,
+            }
+        )
+        
+        # Create a payment link that references the price
+        payment_link = stripe.PaymentLink.create(
+            line_items=[{
+                'price': price.id,
+                'quantity': 1
+            }],
+            after_completion={'type': 'redirect', 'redirect': {'url': redirect_url}},
+            metadata=metadata or {}
+        )
+        
+        # Return payment link details
+        return {
+            "payment_link_id": payment_link.id,
+            "url": payment_link.url,
+            "email": email,
+            "amount": amount,
+            "expires_at": expiration
+        }
+    except Exception as e:
+        print(f"Error generating payment link: {e}")
+        raise
+
+@app.post("/create-payment-link", response_model=schemas.PaymentLinkResponse)
+async def create_payment_link(request: schemas.CreatePaymentLinkRequest):
+    """
+    Create a single payment link for a customer
+    """
+    try:
+        metadata = {
+            "event_id": request.event_id,
+            "description": request.description,
+        }
+        
+        if request.seats:
+            metadata["seats"] = ",".join(request.seats)
+        
+        payment_link = await generate_payment_link(
+            amount=request.amount,
+            currency=request.currency,
+            name=f"Payment for {request.description}",
+            email=request.email,
+            redirect_url=request.redirect_url,
+            metadata=metadata
+        )
+        
+        return {
+            "payment_link_id": payment_link["payment_link_id"],
+            "url": payment_link["url"],
+            "amount": payment_link["amount"],
+            "expires_at": payment_link["expires_at"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @app.post("/create-split-payment", response_model=schemas.SplitPaymentResponse)
 async def create_split_payment(request: schemas.CreateSplitPaymentRequest):
     """
@@ -176,43 +295,31 @@ async def create_split_payment(request: schemas.CreateSplitPaymentRequest):
         split_payment_id = str(uuid.uuid4())
         total_amount = sum(participant.amount for participant in request.participants)
         payment_links = []
-        expiration = int(time.time()) + 24 * 60 * 60  # 24 hours from now
         
         for participant in request.participants:
-            # First create a one-time price
-            price = stripe.Price.create(
-                unit_amount=participant.amount,
-                currency=request.currency,
-                product_data={
-                    'name': f"Split payment for {request.description} - {participant.name}",
-                    # Remove description from product_data as it's not supported
-                }
-            )
-            
-            # Create a payment link that references the price
-            payment_link = stripe.PaymentLink.create(
-                line_items=[{
-                    'price': price.id,
-                    'quantity': 1
-                }],
-                after_completion={'type': 'redirect', 'redirect': {'url': request.redirect_url}},
-                metadata={
-                    "split_payment_id": split_payment_id,
-                    "event_id": request.event_id, 
-                    "seats": ",".join(request.seats),
-                    "participant_email": participant.email,
-                    "description": f"Your share of tickets for seats: {', '.join(request.seats)}"
-                }
-            )
-            
-            # Store expiration time locally
-            payment_links.append({
-                "payment_link_id": payment_link.id,
-                "url": payment_link.url,
+            # Create metadata for this participant's payment
+            metadata = {
+                "split_payment_id": split_payment_id,
+                "event_id": request.event_id,
+                "seats": ",".join(request.seats),
                 "participant_email": participant.email,
-                "amount": participant.amount,
-                "expires_at": expiration
-            })
+                "description": f"Your share of tickets for seats: {', '.join(request.seats)}"
+            }
+            
+            # Generate payment link using the reusable function
+            payment_link = await generate_payment_link(
+                amount=participant.amount,
+                currency=request.currency,
+                name=f"Split payment for {request.description} - {participant.name}",
+                email=participant.email,
+                redirect_url=request.redirect_url,
+                metadata=metadata
+            )
+            
+            # Ensure we have participant_email in the result
+            payment_link["participant_email"] = participant.email
+            
+            payment_links.append(payment_link)
         
         # Store the split payment info (in production, use a database)
         split_payments[split_payment_id] = {

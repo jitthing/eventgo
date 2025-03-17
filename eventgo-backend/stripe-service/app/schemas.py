@@ -72,13 +72,20 @@ class CreateSplitPaymentRequest(BaseModel):
 class PaymentLinkResponse(BaseModel):
     payment_link_id: str
     url: str
-    participant_email: str
+    amount: int
+    expires_at: int
+
+# For split payments, use this expanded response schema
+class SplitPaymentLinkResponse(BaseModel):
+    payment_link_id: str
+    url: str
+    participant_email: str  # This field is needed for split payments
     amount: int
     expires_at: int
 
 class SplitPaymentResponse(BaseModel):
     split_payment_id: str
-    payment_links: list[PaymentLinkResponse]
+    payment_links: list[SplitPaymentLinkResponse]  # Use the specific schema for split payment links
     total_amount: int
     event_id: str
     seats: list[str]
@@ -101,3 +108,12 @@ class SplitPaymentStatusResponse(BaseModel):
     payment_links: list[PaymentLinkStatus]
     amount_paid: int
     amount_pending: int
+
+class CreatePaymentLinkRequest(BaseModel):
+    amount: int
+    currency: str = "sgd"
+    description: str
+    email: str
+    redirect_url: str
+    event_id: str = None
+    seats: List[str] = None
