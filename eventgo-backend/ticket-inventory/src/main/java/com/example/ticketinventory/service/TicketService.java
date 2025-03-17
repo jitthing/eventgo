@@ -209,19 +209,17 @@ public class TicketService {
         List<String> paymentIds = new ArrayList<>();
 
         for (Ticket ticket : tickets) {
-            if (ticket.getStatus() == TicketStatus.reserved) {
-                ticket.setStatus(TicketStatus.available);
-                ticket.setReservationExpires(null);
-                ticket.setReservationId(null);
-                ticket.setUserId(null);
-                
-                if (ticket.getPaymentIntentId() != null) {
-                    paymentIds.add(ticket.getPaymentIntentId());
-                    ticket.setPaymentIntentId(null);
-                }
-                
+            if (ticket.getStatus() == TicketStatus.sold) {
                 canceledCount++;
+                if (!paymentIds.contains(ticket.getPaymentIntentId())) {
+                    paymentIds.add(ticket.getPaymentIntentId());
+                }
             }
+            ticket.setStatus(TicketStatus.cancelled);
+            ticket.setReservationExpires(null);
+            ticket.setReservationId(null);
+            ticket.setUserId(null);
+
         }
 
         ticketRepository.saveAll(tickets);

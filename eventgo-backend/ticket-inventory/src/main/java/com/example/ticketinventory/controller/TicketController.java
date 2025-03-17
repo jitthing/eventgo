@@ -11,9 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import com.example.ticketinventory.dto.TicketResponse;
-import com.example.ticketinventory.dto.ReserveTicketRequest;
-import com.example.ticketinventory.dto.ReserveTicketResponse;
+import com.example.ticketinventory.dto.*;
 import java.util.Map;
 import java.util.List;
 import java.util.HashMap;
@@ -27,6 +25,7 @@ public class TicketController {
     @Autowired
     private TicketService ticketService;
 
+    // GET TICKETS BY EVENT
     @Operation(
         summary = "Get tickets by event",
         description = "Retrieves all tickets and their current status for a specific event. " +
@@ -68,6 +67,8 @@ public class TicketController {
             description = "Invalid request or seats unavailable"
         )
     })
+
+    // RESERVE SEATS
     @PostMapping("/reserve")
     public ResponseEntity<Map<String, Object>> reserveSeat(
         @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -85,6 +86,59 @@ public class TicketController {
         return ResponseEntity.ok(response);
     }
 
+    // CONFIRM TICKET PURCHASE
+    @Operation(
+        summary = "Confirm ticket purchase",
+        description = "Confirms a ticket reservation after successful payment. Changes ticket status from reserved to sold."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Purchase successfully confirmed"),
+        @ApiResponse(responseCode = "400", description = "Invalid reservation or tickets no longer reserved"),
+        @ApiResponse(responseCode = "404", description = "Reservation not found")
+    })
+    @PatchMapping("/confirm")
+    public ResponseEntity<Map<String, String>> confirmSeat(
+        @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Confirmation details",
+            required = true,
+            content = @Content(schema = @Schema(implementation = ConfirmTicketRequest.class))
+        )
+        @RequestBody ConfirmTicketRequest request
+    ) {
+        return ResponseEntity.ok(Map.of(
+            "status", "success",
+            "message", ticketService.confirmSeat(
+                request.getReservationId(),
+                request.getUserId(),
+                request.getPaymentIntentId()
+            )
+        ));
+    }
+    // RELEASE RESERVED SEATS
+    @Operation(
+        summary = "Release reserved seats",
+        description = "Release previously reserved seats back to available status"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Seats successfully released"),
+        @ApiResponse(responseCode = "400", description = "Invalid reservation ID")
+    })
+    @PatchMapping("/release")
+    public ResponseEntity<Map<String, String>> releaseSeat(
+        @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Release details",
+            required = true
+        )
+        @RequestBody Map<String, Object> request
+    ) {
+        Long reservationId = ((Number) request.get("reservation_id")).longValue();
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", ticketService.releaseSeat(reservationId)
+        ));
+    }
+
+    // TRANSFER TICKET OWNERSHIP AFTER VERIFICATION
     @Operation(
         summary = "Transfer ticket ownership",
         description = "Transfer a purchased ticket to another user. Only the current ticket owner can initiate the transfer."
@@ -107,7 +161,8 @@ public class TicketController {
 
         return ResponseEntity.ok(ticketService.transferTicket(ticketId, currentUserId, newUserId));
     }
-
+    
+    // CANCEL EVENT TICKETS
     @Operation(
         summary = "Cancel event tickets",
         description = "Cancel all reserved (unpaid) tickets for an event. Returns list of affected payment intents."
@@ -124,13 +179,13 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.cancelTicketsByEvent(event_id));
     }
 
-    // 7. GET TICKETS BY USER ID
+    // GET TICKETS BY USER ID
     @GetMapping("/user/{user_id}")
     public ResponseEntity<Map<String, Object>> getTicketsByUserId(@PathVariable Long user_id) {
         return ResponseEntity.ok(ticketService.getTicketsByUserId(user_id));
     }
 
-    // 8. CREATE TICKETS
+    // CREATE TICKETS
     @PostMapping("/create")
     public ResponseEntity<Map<String, Object>> createSeats(@RequestBody Map<String, Object> request) {
         List<Map<String, Object>> events = (List<Map<String, Object>>) request.get("events");
@@ -170,4 +225,5 @@ public class TicketController {
         
         return ResponseEntity.ok(response);
     }
+
 }

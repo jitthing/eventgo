@@ -358,7 +358,7 @@ def seed_inventory():
         })
 
     try:
-        response = requests.post(f"{TICKET_INVENTORY_URL}/inventory/create", json=payload, timeout=10)
+        response = requests.post(f"{TICKET_INVENTORY_URL}/tickets/create", json=payload, timeout=10)
         response.raise_for_status()
         print("✅ Inventory successfully populated with dynamic events and seats!")
     except requests.exceptions.RequestException as e:
