@@ -27,7 +27,6 @@ public class TicketService {
         return ticketRepository.findByEventIdAndSeatNumber(eventId, seatNumber);
     }
 
-
     public Map<String, Object> getTicketsByEvent(Long eventId) {
         List<Ticket> tickets = ticketRepository.findByEventId(eventId);
 
@@ -199,6 +198,99 @@ public class TicketService {
         response.put("status", "success");
         response.put("message", "Created " + savedTickets.size() + " tickets for event ID: " + eventId);
         response.put("data", ticketList);
+        
+        return response;
+    }
+
+    @Transactional
+    public Map<String, Object> cancelTicketsByEvent(Long eventId) {
+        List<Ticket> tickets = ticketRepository.findByEventId(eventId);
+        int canceledCount = 0;
+        List<String> paymentIds = new ArrayList<>();
+
+        for (Ticket ticket : tickets) {
+            if (ticket.getStatus() == TicketStatus.sold) {
+                canceledCount++;
+                if (!paymentIds.contains(ticket.getPaymentIntentId())) {
+                    paymentIds.add(ticket.getPaymentIntentId());
+                }
+            }
+            ticket.setStatus(TicketStatus.cancelled);
+            ticket.setReservationExpires(null);
+            ticket.setReservationId(null);
+            ticket.setUserId(null);
+
+        }
+
+        ticketRepository.saveAll(tickets);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("message", String.format("Successfully canceled %d reserved tickets for event ID: %d", canceledCount, eventId));
+        response.put("paymentIds", paymentIds);
+        
+        return response;
+    }
+
+    // get tickets by user id
+    public Map<String, Object> getTicketsByUserId(Long userId) {
+        List<Ticket> tickets = ticketRepository.findByUserId(userId);
+        return getTicketList(tickets);
+    }
+
+    private Map<String, Object> getTicketList(List<Ticket> tickets) {
+        List<Map<String, Object>> ticketList = tickets.stream().map(ticket -> {
+            Map<String, Object> ticketMap = new HashMap<>();
+            ticketMap.put("ticketId", ticket.getTicketId());
+            ticketMap.put("eventId", ticket.getEventId());
+            ticketMap.put("seatNumber", ticket.getSeatNumber());
+            ticketMap.put("status", ticket.getStatus().toString());
+            ticketMap.put("category", ticket.getCategory().toString());
+            ticketMap.put("price", ticket.getPrice());
+            return ticketMap;
+        }).collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("data", ticketList);
+        return response;
+    }
+
+    @Transactional
+    public Map<String, Object> transferTicket(Long ticketId, Long currentUserId, Long newUserId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        if (ticketOpt.isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "Ticket not found");
+            return response;
+        }
+
+        Ticket ticket = ticketOpt.get();
+
+        // Validate current ownership
+        if (ticket.getUserId() == null || !ticket.getUserId().equals(currentUserId)) {
+            response.put("status", "error");
+            response.put("message", "Invalid ticket ownership");
+            return response;
+        }
+
+        // Validate ticket is in sold status (can only transfer purchased tickets)
+        if (ticket.getStatus() != TicketStatus.sold) {
+            response.put("status", "error");
+            response.put("message", "Only purchased tickets can be transferred");
+            return response;
+        }
+
+        // Perform transfer
+        ticket.setUserId(newUserId);
+        ticketRepository.save(ticket);
+
+        response.put("status", "success");
+        response.put("message", "Ticket successfully transferred");
+        response.put("ticket_id", ticketId);
+        response.put("new_user_id", newUserId);
         
         return response;
     }
