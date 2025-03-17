@@ -154,6 +154,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://ticket-inventory-db:3306/ticket_inventory
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
+      SPRINGDOC_SWAGGER_UI_PATH: /swagger-ui.html
+      SPRINGDOC_API_DOCS_PATH: /api-docs
+      SPRINGDOC_SWAGGER_UI_ENABLED: "true"
+      SPRINGDOC_API_DOCS_ENABLED: "true"
+      SERVER_PORT: 8080
     restart: always
     networks:
       - app_network
