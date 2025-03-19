@@ -8,6 +8,7 @@ import Image from "next/image";
 import SeatSelection from "@/components/SeatSelection";
 import BackButton from "@/components/BackButton";
 import Link from "next/link";
+import { format } from "date-fns";
 
 export default function EventPage() {
 	const params = useParams();
@@ -19,6 +20,12 @@ export default function EventPage() {
 	const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
 	const [isGroupBookingOpen, setIsGroupBookingOpen] = useState(false);
 
+	function formatEventDuration(dateString: string) {
+		const startDate = new Date(dateString);
+		const endDate = new Date(startDate.getTime() + 3 * 60 * 60 * 1000); // Add 3 hours
+		return `${format(startDate, "MMMM d, yyyy (h:mm a")} to ${format(endDate, "h:mm a")})`;
+	}
+
 	useEffect(() => {
 		if (!isNaN(eventId)) {
 			(async () => {
@@ -28,7 +35,6 @@ export default function EventPage() {
 
 					// Here is the workaround:
 					(fetchedEvent as any).capacity = tickets.length;
-					(fetchedEvent as any).location = fetchedEvent.venue;
 
 					setEvent(fetchedEvent);
 				} catch {
@@ -72,14 +78,10 @@ export default function EventPage() {
 
 					<div className="mt-6 space-y-3 text-gray-900 text-lg">
 						<p>
-							📅 <strong>Date:</strong> {formatDate(event.date)}
-						</p>
-						{/* Use the newly set "location" field in local state */}
-						<p>
-							📍 <strong>Location:</strong> {event.location}
+							📅 <strong>Date:</strong> {formatEventDuration(event.date)}
 						</p>
 						<p>
-							🏟️ <strong>Venue:</strong> {event.venue}
+							📍 <strong>Venue:</strong> {event.venue}
 						</p>
 						{/* Use the newly set "capacity" field in local state */}
 						<p>
