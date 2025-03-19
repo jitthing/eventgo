@@ -1,15 +1,22 @@
-import { Event, Seat, TicketStatus } from "./interfaces";
+import { 
+  EventResponse, Event, Ticket, TicketResponse, TicketStatus, ReserveTicketRequest, ReserveTicketResponse, 
+  ConfirmTicketRequest, ConfirmTicketResponse, TransferTicketRequest, TransferTicketResponse 
+} from "./interfaces";
 
-const EVENTS_API_URL = process.env.NEXT_PUBLIC_EVENTS_API_URL || 'http://localhost:8002';
-const TICKETS_API_URL = process.env.NEXT_PUBLIC_TICKETS_API_URL || 'http://localhost:8003';
+const EVENTS_API_URL = process.env.NEXT_PUBLIC_EVENTS_API_URL || 'https://personal-vyyhsf3d.outsystemscloud.com/EventsOutsystem/rest/EventsAPI';
+const TICKETS_API_URL = process.env.NEXT_PUBLIC_TICKETS_API_URL || 'http://localhost:8005';
 
+/**
+ * Fetch an event by event ID.
+ */
 export async function getEvent(event_id: number): Promise<Event> {
   const response = await fetch(`${EVENTS_API_URL}/events/${event_id}`);
   if (!response.ok) {
     throw new Error('Failed to fetch event');
   }
-  const event: Event = await response.json();
-  
+  const eventResponse: EventResponse = await response.json();
+  const event = eventResponse.EventAPI;
+
   // Ensure image_url is a full URL
   if (event.image_url && !event.image_url.startsWith('http')) {
     event.image_url = `${EVENTS_API_URL}/events/${event.event_id}/image`;
@@ -18,40 +25,16 @@ export async function getEvent(event_id: number): Promise<Event> {
   return event;
 }
 
-export async function getTicketsForEvent(eventId: number) {
-  const response = await fetch(`${TICKETS_API_URL}/events/${eventId}/tickets`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch tickets');
-  }
-  return response.json();
-}
-
-export async function getFeaturedEvents(): Promise<Event[]> {
-  const response = await fetch(`${EVENTS_API_URL}/events?featured=true`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch featured events');
-  }
-  const events: Event[] = await response.json();
-  
-  // Transform relative image URLs to full URLs
-  const transformedEvents = events.map((event) => {
-    if (event.image_url && !event.image_url.startsWith('http')) {
-      event.image_url = `${EVENTS_API_URL}/events/${event.event_id}/image`;
-    }
-    return event;
-  });
-  
-  return transformedEvents;
-}
-
+/**
+ * Fetch all events.
+ */
 export async function getAllEvents(): Promise<Event[]> {
-  const response = await fetch(`${EVENTS_API_URL}/events`); // Fetch all events
+  const response = await fetch(`${EVENTS_API_URL}/events`);
   if (!response.ok) {
     throw new Error("Failed to fetch events");
   }
   const events: Event[] = await response.json();
 
-  // Transform relative image URLs to full URLs
   return events.map((event) => {
     if (event.image_url && !event.image_url.startsWith("http")) {
       event.image_url = `${EVENTS_API_URL}/events/${event.event_id}/image`;
@@ -60,43 +43,149 @@ export async function getAllEvents(): Promise<Event[]> {
   });
 }
 
-// temp only
-function generateMockSeats(count: number): Seat[] {
-  const categories = ["VIP", "Regular", "Economy"];
-  const statuses = [TicketStatus.AVAILABLE, TicketStatus.RESERVED, TicketStatus.SOLD];
+/**
+ * Fetch featured events.
+ */
+export async function getFeaturedEvents(): Promise<Event[]> {
+  const response = await fetch(`${EVENTS_API_URL}/events?featured=true`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch featured events");
+  }
 
-  return Array.from({ length: count }, (_, index) => ({
-    id: index + 1,
-    seat_number: `${String.fromCharCode(65 + Math.floor(index / 10))}${(index % 10) + 1}`, // Fix: Removed "Row"
-    category: categories[Math.floor(Math.random() * categories.length)],
-    status: statuses[Math.floor(Math.random() * statuses.length)],
+  const data = await response.json();
+
+  // Ensure the API response structure is valid
+  if (!data || !Array.isArray(data.EventAPI)) {
+    throw new Error("Unexpected API response structure");
+  }
+
+  return data.EventAPI.map((event: Event) => ({
+    ...event,
+    // Ensure image_url is a full URL
+    image_url: event.image_url.startsWith("http")
+      ? event.image_url
+      : `${EVENTS_API_URL}/events/${event.event_id}/image`,
   }));
 }
 
-
-export async function getAvailableSeats(eventId: number): Promise<Seat[]> {
-  const mockSeats = generateMockSeats(25); // Generate 10 mock seats
-
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  return mockSeats;
-  // 1) Call the TICKETS-SERVICE endpoint that already merges seat + status
-  const response = await fetch(`${TICKETS_API_URL}/events/${eventId}/seats`);
+/**
+ * Fetch all tickets for a given event.
+ */
+export async function getTicketsForEvent(event_id: number): Promise<Ticket[]> {
+  const response = await fetch(`${TICKETS_API_URL}/tickets/${event_id}`);
   if (!response.ok) {
-    throw new Error(`Failed to fetch seats for event ${eventId}`);
+    throw new Error("Failed to fetch tickets");
   }
 
-  // 2) Parse JSON to an array of seats
-  const seats: Seat[] = await response.json();
+  const ticketResponse: TicketResponse = await response.json();
 
-  // Each seat has "id", "seat_number", "category", and "status"
-  // For safety, ensure status is one of our known TicketStatus values:
-  const normalized = seats.map((seat) => {
-    if (!seat.status) {
-      seat.status = TicketStatus.AVAILABLE; 
-    }
-    return seat;
+  // Ensure tickets exist inside `data`
+  if (!Array.isArray(ticketResponse.data)) {
+    throw new Error("Unexpected ticket response structure");
+  }
+
+  return ticketResponse.data;
+}
+
+/**
+ * Reserve seats for an event.
+ */
+export async function reserveSeats(event_id: number, user_id: number, seats: string[]): Promise<ReserveTicketResponse> {
+  const payload: ReserveTicketRequest = { event_id, user_id, seats };
+  
+  const response = await fetch(`${TICKETS_API_URL}/tickets/reserve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
   });
+  if (!response.ok) {
+    throw new Error('Failed to reserve seats');
+  }
+  return response.json();
+}
 
-  return normalized;
+/**
+ * Confirm ticket purchase after payment.
+ */
+export async function confirmPurchase(payment_intent_id: string, reservation_id: number, user_id: number): Promise<ConfirmTicketResponse> {
+  const payload: ConfirmTicketRequest = { payment_intent_id, reservation_id, user_id };
+
+  const response = await fetch(`${TICKETS_API_URL}/tickets/confirm`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to confirm ticket purchase');
+  }
+  return response.json();
+}
+
+/**
+ * Cancel all reserved (unpaid) tickets for an event.
+ */
+export async function cancelTickets(event_id: number): Promise<{ status: string; message: string }> {
+  const response = await fetch(`${TICKETS_API_URL}/tickets/${event_id}/cancel`, {
+    method: 'PATCH',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to cancel tickets');
+  }
+  return response.json();
+}
+
+/**
+ * Cancel an event.
+ */
+export async function cancelEvent(event_id: number): Promise<{ status: string; message: string }> {
+  const response = await fetch(`${EVENTS_API_URL}/events/${event_id}/cancel`, {
+    method: 'PATCH',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to cancel event');
+  }
+  return response.json();
+}
+
+/**
+ * Transfer ticket ownership to another user.
+ */
+export async function transferTicket(current_user_id: number, new_user_id: number, ticket_id: number): Promise<TransferTicketResponse> {
+  const payload: TransferTicketRequest = { current_user_id, new_user_id, ticket_id };
+
+  const response = await fetch(`${TICKETS_API_URL}/tickets/transfer`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to transfer ticket');
+  }
+  return response.json();
+}
+
+/**
+ * Release previously reserved seats back to available status.
+ */
+export async function releaseSeats(reservation_id: number): Promise<{ status: string; message: string }> {
+  const response = await fetch(`${TICKETS_API_URL}/tickets/release`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reservation_id }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to release seats');
+  }
+  return response.json();
+}
+
+/**
+ * Get all tickets for a specific user.
+ */
+export async function getUserTickets(user_id: number): Promise<Ticket[]> {
+  const response = await fetch(`${TICKETS_API_URL}/tickets/user/${user_id}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch user tickets');
+  }
+  return response.json();
 }
