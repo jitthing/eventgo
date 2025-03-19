@@ -50,6 +50,13 @@ async def health_check(db: Session = Depends(get_db)):
         print(f"❌ Health check failed: {error_details}")  # Print error in logs
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/users", response_model=list[schemas.UserResponse])
+async def get_all_users(db: Session = Depends(get_db)):
+    """
+    Retrieve a list of all users.
+    """
+    users = db.query(models.User).all()
+    return users
 
 @app.post("/register")
 async def register_user(user: schemas.UserCreate, response: Response, db: Session = Depends(get_db)):
