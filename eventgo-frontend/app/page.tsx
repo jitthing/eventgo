@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getFeaturedEvents } from "@/lib/api";
+import { getFeaturedEvents, getTicketsForEvent } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { Suspense } from "react";
+import { Event, Ticket, TicketStatus } from "@/lib/interfaces";
 
 // Loading component for events
 function EventsSkeleton() {
@@ -24,11 +25,34 @@ function EventsSkeleton() {
 
 // Fetch and display featured events
 async function EventsList() {
-	const events = await getFeaturedEvents();
+	let events: Event[] = [];
+	try {
+		events = await getFeaturedEvents();
+	} catch (error) {
+		console.error("Error fetching featured events:", error);
+	}
+
+	// Fetch ticket prices for each event
+	const eventsWithPrices = await Promise.all(
+		events.map(async (event) => {
+			try {
+				const tickets = await getTicketsForEvent(event.event_id);
+				const availableTickets = tickets.filter((ticket) => ticket.status === TicketStatus.AVAILABLE);
+
+				// Get the lowest ticket price
+				const lowestPrice = availableTickets.length > 0 ? Math.min(...availableTickets.map((ticket) => ticket.price)) : null;
+
+				return { ...event, price: lowestPrice };
+			} catch (error) {
+				console.error(`Error fetching tickets for event ${event.event_id}:`, error);
+				return { ...event, price: null }; // Handle failure gracefully
+			}
+		})
+	);
 
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-			{events.map((event) => (
+			{eventsWithPrices.map((event) => (
 				<div key={event.event_id} className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
 					<div className="relative h-48">
 						<Image src={event.image_url} alt={event.title} fill className="object-cover" />
@@ -38,8 +62,8 @@ async function EventsList() {
 							<span className="text-blue-600 text-sm font-medium">{event.category}</span>
 							<h3 className="text-black font-semibold mt-1">{event.title}</h3>
 							<p className="text-black mt-1">{formatDate(event.date)}</p>
-							<p className="text-black mt-1">{event.location}</p>
-							<p className="text-black font-medium mt-2">Starting at ${event.price}</p>
+							<p className="text-black mt-1">{event.venue}</p>
+							<p className="text-black font-medium mt-2">{event.price !== null ? `Starting at $${event.price}` : "No tickets available"}</p>
 						</div>
 						<Link href={`/events/${event.event_id}`} className="mt-4 block text-center bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
 							Get Tickets
