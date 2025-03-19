@@ -84,7 +84,7 @@ services:
             test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
             interval: 10s
             timeout: 5s
-            retries: 3
+            retries: 5
 
     ticket-inventory-db:
         container_name: ticket-inventory-db
@@ -103,9 +103,9 @@ services:
             - app_network
         healthcheck:
             test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u$$MYSQL_USER", "-p$$MYSQL_PASSWORD"]
-            interval: 5s
+            interval: 10s
             timeout: 5s
-            retries: 5
+            retries: 10
 
     # --------------------------------------------------------------------------
     # NOTIFICATION SERVICE
