@@ -147,9 +147,9 @@ services:
     build: ./ticket-inventory
     ports:
       - "8005:8080"
-    # depends_on:
-    #   ticket-inventory-db:
-    #     condition: service_healthy
+    depends_on:
+      ticket-inventory-db:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://ticket-inventory-db:3306/ticket_inventory
       SPRING_DATASOURCE_USERNAME: user
@@ -183,6 +183,11 @@ services:
       - ticket-inventory-data:/var/lib/mysql
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u$$MYSQL_USER", "-p$$MYSQL_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # --------------------------------------------------------------------------
   # NOTIFICATION SERVICE
