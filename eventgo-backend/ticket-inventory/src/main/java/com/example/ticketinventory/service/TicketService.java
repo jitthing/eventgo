@@ -37,6 +37,7 @@ public class TicketService {
             ticketMap.put("seat_number", ticket.getSeatNumber());
             ticketMap.put("status", ticket.getStatus().toString());
             ticketMap.put("category", ticket.getCategory().toString());
+            ticketMap.put("price", ticket.getPrice());
             return ticketMap;
         }).collect(Collectors.toList());
 

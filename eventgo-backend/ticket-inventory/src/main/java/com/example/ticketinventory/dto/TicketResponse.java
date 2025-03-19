@@ -19,4 +19,7 @@ public class TicketResponse {
     
     @Schema(description = "Count of tickets by status")
     private Map<String, Long> statusCounts;
+
+    @Schema(description = "Price of each ticket", example = "50.0")
+    private Double price;
 }
