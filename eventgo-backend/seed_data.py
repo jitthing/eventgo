@@ -62,22 +62,23 @@ def seed_users():
     If a user already exists, ignore the error.
     """
     users = [
-        {"email": "user1@example.com", "password": "password123"},
-        {"email": "user2@example.com", "password": "securepass456"},
-        {"email": "user3@example.com", "password": "mysecretpass789"},
+        {"email": "user1@example.com", "password": "password123", "full_name": "Alice Johnson", "role": "user"},
+        {"email": "admin@eventgo.com", "password": "admin", "full_name": "Bob Smith", "role": "admin"},
+        {"email": "user3@example.com", "password": "mysecretpass789", "full_name": "Charlie Lee", "role": "user"},
     ]
 
     for u in users:
         try:
             resp = requests.post(f"{AUTH_SERVICE_URL}/register", json=u, timeout=5)
             if resp.status_code == 200:
-                print(f"Created user: {u['email']}")
+                print(f"✅ Created user: {u['email']} (Role: {u['role']})")
             elif resp.status_code == 400 and "already registered" in resp.text:
-                print(f"User {u['email']} already registered. Skipping.")
+                print(f"⚠️ User {u['email']} already registered. Skipping.")
             else:
                 resp.raise_for_status()
         except Exception as e:
-            print(f"Failed to create user {u['email']}: {e}")
+            print(f"❌ Failed to create user {u['email']}: {e}")
+
 
 # ---------------------------------------------------------------------------
 # 3) Log in a user to get a JWT token
@@ -96,13 +97,16 @@ def login_user(email: str, password: str) -> str:
         resp.raise_for_status()
         data = resp.json()
         token = data["access_token"]
+        role = data.get("role", "unknown")  # NEW: Fetch role from response
+
         print(
-            f"User {email} logged in successfully, got token: {token[:10]}... (truncated)"
+            f"✅ User {email} logged in successfully (Role: {role}), got token: {token[:10]}... (truncated)"
         )
         return token
     except Exception as e:
-        print(f"Failed to log in user {email}: {e}")
+        print(f"❌ Failed to log in user {email}: {e}")
         return ""
+
 
 # ---------------------------------------------------------------------------
 # 4) Create predefined events in the Event service

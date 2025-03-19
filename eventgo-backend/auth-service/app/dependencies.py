@@ -56,11 +56,9 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Optionally remove the "Bearer " prefix if present
     if token.startswith("Bearer "):
-        token = token[len("Bearer ") :]
+        token = token[len("Bearer "):]
 
-    # 1) Check if token is blacklisted
     if is_token_blacklisted(token):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -68,16 +66,17 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 2) Continue with normal JWT decoding
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
-        if email is None:
+        role: str = payload.get("role")  # NEW: Extract role from token
+        if email is None or role is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
@@ -85,4 +84,6 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == email).first()
     if not user:
         raise credentials_exception
+
     return user
+

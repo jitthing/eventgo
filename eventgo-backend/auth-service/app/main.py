@@ -59,59 +59,69 @@ async def register_user(user: schemas.UserCreate, response: Response, db: Sessio
 
     # Hash the password and create the user
     hashed_password = models.User.get_password_hash(user.password)
-    db_user = models.User(email=user.email, hashed_password=hashed_password)
+    db_user = models.User(
+        email=user.email,
+        full_name=user.full_name,  # NEW: Full name
+        hashed_password=hashed_password,
+        role=user.role,  # NEW: Role (user/admin)
+    )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
 
     # ✅ Generate JWT token
-    access_token = create_access_token(data={"sub": db_user.email})
+    access_token = create_access_token(data={"sub": db_user.email, "role": db_user.role.value})
 
     # ✅ Set token as HTTP-only cookie
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
-        samesite="lax",  # Use "none" with "secure=True" for production
-        secure=False,  # Use secure=True in production with HTTPS
+        samesite="lax",
+        secure=False,
         path="/"
     )
 
-    return {"message": "User registered successfully", "access_token": access_token, "token_type": "bearer"}
+    return {
+        "message": "User registered successfully",
+        "access_token": access_token,
+        "token_type": "bearer",
+        "role": db_user.role,  # NEW: Return role in response
+    }
 
 
 
 @app.post("/login", response_model=schemas.Token)
 async def login(
-    response: Response,  # ✅ Include response to set cookies
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
-    if not user or not models.User.verify_password(
-        form_data.password, user.hashed_password
-    ):
+    if not user or not models.User.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token = create_access_token(data={"sub": user.email})
+    access_token = create_access_token(data={"sub": user.email, "role": user.role.value})
 
     # ✅ Set the token in an httpOnly cookie
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
-        httponly=True,  # ✅ Prevents JS access
-        # secure=True,  # ✅ Necessary to comment out as we're developing locally with http without https
-        # samesite="Strict",
-        samesite="lax",  # i changed this to lax, i think "none" required secure to be True
+        httponly=True,
+        samesite="lax",
         secure=False,
         path="/"
     )
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "role": user.role  # NEW: Return role
+    }
 
 
 # @app.get("/me", response_model=schemas.UserResponse)
@@ -120,7 +130,12 @@ async def login(
 
 @app.get("/me")
 async def read_users_me(current_user: models.User = Depends(get_current_user)):
-    return {"id": current_user.id, "email": current_user.email}
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+    }
+
 
 
 @app.get("/search-users")
