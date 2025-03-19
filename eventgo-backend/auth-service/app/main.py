@@ -2,11 +2,12 @@ from fastapi import FastAPI, Depends, HTTPException, Response, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+
+from jose import JWTError, jwt  # Move third-party imports up
+
 from . import models, schemas
 from .database import engine, get_db
 from .schemas import TokenValidationRequest
-
-from jose import JWTError, jwt
 from .dependencies import (
     get_db,
     create_access_token,
@@ -14,7 +15,7 @@ from .dependencies import (
     SECRET_KEY,
     ALGORITHM,
 )
-from . import models, schemas
+
 from .database import engine
 from .token_blacklist import is_token_blacklisted, add_to_blacklist
 
