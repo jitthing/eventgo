@@ -113,10 +113,30 @@ async def login(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@app.get("/me", response_model=schemas.UserResponse)
-async def read_users_me(current_user: models.User = Depends(get_current_user)):
-    return current_user
+# @app.get("/me", response_model=schemas.UserResponse)
+# async def read_users_me(current_user: models.User = Depends(get_current_user)):
+#     return current_user
 
+@app.get("/me")
+async def read_users_me(current_user: models.User = Depends(get_current_user)):
+    return {"id": current_user.id, "email": current_user.email}
+
+
+@app.get("/search-users")
+async def search_users(email: str, db: Session = Depends(get_db)):
+    """
+    Search users by email. Supports partial match.
+    Example usage: /search-users?email=test
+    """
+    if not email:
+        raise HTTPException(status_code=400, detail="Email parameter is required")
+
+    users = db.query(models.User).filter(models.User.email.ilike(f"%{email}%")).limit(10).all()
+
+    if not users:
+        return {"message": "No users found"}
+
+    return [{"id": user.id, "email": user.email} for user in users]
 
 @app.post("/logout")
 async def logout(response: Response, request: Request):

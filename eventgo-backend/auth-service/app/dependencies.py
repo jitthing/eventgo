@@ -20,11 +20,29 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
+# def create_access_token(data: dict):
+#     """Generate a JWT token with an expiration."""
+#     to_encode = data.copy()
+#     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+#     to_encode.update({"exp": expire})
+#     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+#     return encoded_jwt
+
+
 def create_access_token(data: dict):
     """Generate a JWT token with an expiration."""
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
+    
+    # Fetch user ID if it's not already included
+    if "user_id" not in to_encode and "sub" in to_encode:
+        email = to_encode["sub"]
+        db = next(get_db())
+        user = db.query(models.User).filter(models.User.email == email).first()
+        if user:
+            to_encode["user_id"] = user.id  # Add user_id to the token
+
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
