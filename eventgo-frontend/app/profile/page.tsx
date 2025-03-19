@@ -51,8 +51,8 @@ export default function ProfilePage() {
 				<div className="flex items-center space-x-4">
 					<img src={user?.avatar || "https://api.dicebear.com/6.x/initials/svg?seed=User"} alt="Profile Avatar" className="w-16 h-16 rounded-full" />
 					<div>
-						<h1 className="text-3xl font-bold text-black">{user?.email}</h1>
-						<p className="text-black">User ID: {user?.id}</p>
+						<h1 className="text-3xl font-bold text-black">{user?.full_name || "User"}</h1> {/* ✅ Display full name */}
+						<p className="text-black text-lg">{user?.email}</p> {/* ✅ Show email */}
 					</div>
 				</div>
 

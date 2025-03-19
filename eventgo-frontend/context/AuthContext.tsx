@@ -6,10 +6,9 @@ import { fetchUser } from "@/lib/auth";
 const AuthContext = createContext<any>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-	const [user, setUser] = useState<any>(null);
+	const [user, setUser] = useState<{ id: number; email: string; full_name: string; role: string } | null>(null);
 	const [loading, setLoading] = useState(true);
 
-	// Fetch user data on mount
 	useEffect(() => {
 		async function loadUser() {
 			try {

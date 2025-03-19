@@ -24,6 +24,8 @@ export default function RegisterPage() {
 		checkSession();
 	}, [router, setUser]);
 
+	const [fullName, setFullName] = useState("");
+
 	async function handleRegister(event: React.FormEvent) {
 		event.preventDefault();
 		setError("");
@@ -34,22 +36,23 @@ export default function RegisterPage() {
 		}
 
 		try {
-			await registerUser(email, password);
-			// ✅ Auto-login after registration
+			await registerUser(email, password, fullName);
 			await loginUser(email, password);
 			const userData = await fetchUser(); // ✅ Fetch user after login
-			setUser(userData); // ✅ Update global auth state
+			setUser(userData); // ✅ Update auth state with full_name and role
 			router.push("/profile");
 		} catch (err: any) {
 			setError(err.message || "Failed to register.");
 		}
 	}
+
 	return (
 		<div className="min-h-screen bg-white flex items-center justify-center">
 			<div className="max-w-md w-full bg-white shadow-md rounded-lg p-6">
 				<h1 className="text-2xl font-bold text-black mb-4">Create an Account</h1>
 				{error && <p className="text-red-600">{error}</p>}
 				<form onSubmit={handleRegister} className="space-y-4">
+					<input type="text" className="w-full p-3 border rounded text-black" placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
 					<input type="email" className="w-full p-3 border rounded text-black" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
 					<input type="password" className="w-full p-3 border rounded text-black" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
 					<input type="password" className="w-full p-3 border rounded text-black" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />

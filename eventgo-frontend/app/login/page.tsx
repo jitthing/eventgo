@@ -30,7 +30,7 @@ export default function LoginPage() {
 		try {
 			await loginUser(email, password);
 			const userData = await fetchUser(); // ✅ Fetch user after login
-			setUser(userData); // ✅ Update global auth state
+			setUser(userData); // ✅ Update auth state with full_name and role
 			router.push("/profile");
 		} catch (err: any) {
 			setError(err.message || "Failed to login.");
