@@ -62,9 +62,10 @@ def seed_users():
     If a user already exists, ignore the error.
     """
     users = [
-        {"email": "user1@example.com", "password": "password123", "full_name": "Alice Johnson", "role": "user"},
-        {"email": "admin@eventgo.com", "password": "admin", "full_name": "Bob Smith", "role": "admin"},
-        {"email": "user3@example.com", "password": "mysecretpass789", "full_name": "Charlie Lee", "role": "user"},
+        {"email": "admin@eventgo.com", "password": "admin", "full_name": "Warren Buffet", "role": "admin"},
+        {"email": "user1@example.com", "password": "password", "full_name": "Jack Neo", "role": "user"},
+        {"email": "user2@example.com", "password": "password", "full_name": "Lebron James", "role": "user"},
+        {"email": "user3@example.com", "password": "password", "full_name": "Mark Lee", "role": "user"},
     ]
 
     for u in users:
@@ -138,7 +139,7 @@ def seed_events() -> list:
             "venue": "Madison Square Garden",
             "is_featured": True,
             "image_url": "https://media1.s-nbcnews.com/i/rockcms/2025-01/351270/250104-LeBron-James-ch-0953-26ecee_e08d57a40aaa073423abe1ed6d5e5988584a1a1e.jpg",
-            "date": "2025-03-13T12:34:56.789123",
+            "date": "2025-09-20T13:00:00.000000",
             "status": "Upcoming"
         },
         {
@@ -148,7 +149,7 @@ def seed_events() -> list:
             "venue": "Singapore National Stadium",
             "is_featured": True,
             "image_url": "https://tmw.com.sg/wp-content/uploads/2023/07/Coldplay-concert-in-Singapore-all-you-need-to-know.webp",
-            "date": "2025-03-13T12:34:56.789123",
+            "date": "2025-09-24T19:00:00.000000",
             "status": "Upcoming"
             
         },
@@ -159,7 +160,7 @@ def seed_events() -> list:
             "venue": "MIT Auditorium",
             "is_featured": True,
             "image_url": "https://talkstar-photos.s3.amazonaws.com/uploads/5d36796c-8a8d-4832-9b27-5456113e06f4/JimVandehei_2021X-stageshot.jpg",
-            "date": "2025-03-13T12:34:56.789123",
+            "date": "2025-09-26T18:00:00.000000",
             "status": "Upcoming"
         },
         {
@@ -169,7 +170,7 @@ def seed_events() -> list:
             "venue": "Marina Bay Street Circuit",
             "is_featured": True,
             "image_url": "https://singaporegp.sg/media/2022/press-release/2022-first-wave-of-sgp-entertainment-line-up-walkabout-tickets.png",
-            "date": "2025-09-20T20:00:00.000000",
+            "date": "2025-09-26T18:00:00.000000",
             "status": "Upcoming"
         },
         {
@@ -179,7 +180,7 @@ def seed_events() -> list:
             "venue": "Suntec Convention Centre",
             "is_featured": True,
             "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzFe5vbnckSdpy1qr3o459Btd4b2mqP9xjCg&s",
-            "date": "2025-03-13T12:34:56.789123",
+            "date": "2025-09-26T12:00:00.000000",
             "status": "Upcoming"
         },
         {
@@ -189,7 +190,7 @@ def seed_events() -> list:
             "venue": "Berlin Arena",
             "is_featured": False,
             "image_url": "https://images.ra.co/4f7482518a367caf2a12ceb719e7da4497663022.jpg",
-            "date": "2025-03-13T12:34:56.789123",
+            "date": "2025-11-11T23:00:00.000000",
             "status": "Upcoming"
 
         },
@@ -237,13 +238,19 @@ def generate_tickets(event_id, min_seats=10, max_seats=30):
         seat_number = f"{chr(65 + (i - 1) // 10)}{(i - 1) % 10 + 1}"
         ticket_status = "available" if random.random() > 0.3 else "sold"
 
-        seats.append({
+        ticket_data = {
             "ticketId": i + (event_id * 100),
             "seatNumber": seat_number,
             "category": seat_category,
             "status": ticket_status,
             "price": vip_price if seat_category == "VIP" else standard_price
-        })
+        }
+
+        # Assign a random user_id (either 2, 3, or 4) to sold tickets
+        if ticket_status == "sold":
+            ticket_data["user_id"] = random.choice([2, 3, 4])
+        
+        seats.append(ticket_data)
 
     print(f"[Tickets] Successfully generated {seat_count} tickets for Event ID {event_id}.")
     return seats, vip_price, standard_price
@@ -296,13 +303,13 @@ def main():
     print("\n=== 2) Creating Users ===")
     seed_users()
 
-    print("\n=== 3) Logging in User ===")
-    user_token = login_user("user1@example.com", "password123")
+    # print("\n=== 3) Logging in User ===")
+    # user_token = login_user("user1@example.com", "password123")
 
-    print("\n=== 4) Creating Events ===")
+    print("\n=== 3) Creating Events ===")
     event_ids = seed_events()
 
-    print("\n=== 5) Creating Tickets for Events ===")
+    print("\n=== 4) Creating Tickets for Events ===")
     seed_tickets(event_ids)
 
     print("\n✅ Seeding complete!")
