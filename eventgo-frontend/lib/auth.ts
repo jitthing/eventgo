@@ -28,16 +28,6 @@ export async function registerUser(email: string, password: string, full_name: s
   return response.json();
 }
 
-// export async function fetchUser() {
-//   const response = await fetch(`${AUTH_API_URL}/me`, {
-//     method: "GET",
-//     credentials: "include", // ✅ Ensure cookies are included
-//   });
-
-//   if (!response.ok) throw new Error("Unauthorized");
-//   return response.json();
-// }
-
 export async function fetchUser() {
   const response = await fetch(`${AUTH_API_URL}/me`, {
     method: "GET",
@@ -70,4 +60,16 @@ export async function debugCookies() {
   const data = await response.json();
   console.log("Debug Cookies:", data);
   return data;
+}
+
+export async function searchUsers(email: string) {
+  const response = await fetch(`${AUTH_API_URL}/search-users?email=${encodeURIComponent(email)}`, {
+    method: "GET",
+    credentials: "include", // ✅ Ensure cookies are included
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || "Search failed");
+  }
+  return response.json();
 }

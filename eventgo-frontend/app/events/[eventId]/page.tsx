@@ -115,16 +115,18 @@ export default function EventPage() {
 
 function GroupBookingModal({ selectedSeats, eventId, onClose }: { selectedSeats: number[]; eventId: number; onClose: () => void }) {
 	const router = useRouter();
-	const [coBookers, setCoBookers] = useState<string[]>([]);
+	const { user } = useAuth(); // Get logged-in user
+	const [coBookers, setCoBookers] = useState<{ id: number; email: string }[]>([]);
 	const [email, setEmail] = useState("");
 	const [errorMsg, setErrorMsg] = useState("");
 	const [seatAssignments, setSeatAssignments] = useState<{ [seatId: number]: string }>({});
 
 	const totalCoBookersNeeded = selectedSeats.length - 1; // User is already one of the ticket holders
 	const remainingCoBookers = totalCoBookersNeeded - coBookers.length;
-
-	// Get all assigned users
 	const assignedUsers = new Set(Object.values(seatAssignments));
+
+	// Define isAllSeatsAssigned to check if every selected seat has an assignee.
+	const isAllSeatsAssigned = selectedSeats.every((seatId) => seatAssignments[seatId]);
 
 	const addCoBooker = async () => {
 		setErrorMsg("");
@@ -132,34 +134,40 @@ function GroupBookingModal({ selectedSeats, eventId, onClose }: { selectedSeats:
 			setErrorMsg("Please enter an email address.");
 			return;
 		}
-
 		// Validate email format
 		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 		if (!emailRegex.test(email)) {
 			setErrorMsg("Invalid email format.");
 			return;
 		}
-
+		// Prevent adding your own email as a co-booker
+		if (user && email === user.email) {
+			setErrorMsg("You cannot add your own email as a co-booker.");
+			return;
+		}
 		try {
 			const searchResult = await searchUsers(email);
-			// Check if the response is an array of users (valid response)
 			if (Array.isArray(searchResult)) {
 				if (searchResult.length === 0) {
 					setErrorMsg("No user found with this email.");
 					return;
 				}
+				// Use first found user
+				const foundUser = searchResult[0];
+				if (coBookers.find((co) => co.email === foundUser.email)) {
+					setErrorMsg("Co-booker already added.");
+					return;
+				}
+				if (coBookers.length < totalCoBookersNeeded) {
+					setCoBookers([...coBookers, { id: foundUser.id, email: foundUser.email }]);
+					setEmail("");
+				}
 			} else if (searchResult && searchResult.message) {
-				// Handle the case where the endpoint returns an error object
 				setErrorMsg(searchResult.message);
 				return;
 			} else {
 				setErrorMsg("Unexpected response from user search.");
 				return;
-			}
-
-			if (!coBookers.includes(email) && coBookers.length < totalCoBookersNeeded) {
-				setCoBookers([...coBookers, email]);
-				setEmail("");
 			}
 		} catch (error) {
 			console.error("Error searching for user:", error);
@@ -167,54 +175,25 @@ function GroupBookingModal({ selectedSeats, eventId, onClose }: { selectedSeats:
 		}
 	};
 
-	const removeCoBooker = (emailToRemove: string) => {
-		setCoBookers(coBookers.filter((email) => email !== emailToRemove));
-
-		// Remove assignments of this co-booker
-		setSeatAssignments((prev) => {
-			const updatedAssignments = { ...prev };
-			Object.keys(updatedAssignments).forEach((seatId) => {
-				if (updatedAssignments[Number(seatId)] === emailToRemove) {
-					updatedAssignments[Number(seatId)] = "";
-				}
-			});
-			return updatedAssignments;
-		});
-	};
-
-	const assignSeat = (seatId: number, email: string) => {
-		setSeatAssignments((prev) => {
-			const updatedAssignments = { ...prev };
-
-			// Remove previous assignment for this user if it exists elsewhere
-			Object.keys(updatedAssignments).forEach((key) => {
-				if (updatedAssignments[Number(key)] === email) {
-					updatedAssignments[Number(key)] = "";
-				}
-			});
-
-			updatedAssignments[seatId] = email;
-			return updatedAssignments;
-		});
-	};
-
-	const isAllSeatsAssigned = selectedSeats.every((seatId) => seatAssignments[seatId]);
-
 	const proceedToCheckout = () => {
 		if (!isAllSeatsAssigned) return;
-
-		const coBookersQuery = encodeURIComponent(coBookers.join(","));
-		const seatAssignmentsQuery = encodeURIComponent(JSON.stringify(seatAssignments));
-
-		const bookingInfo = selectedSeats.map((seatId) => ({
-			event_id: eventId,
-			user_id: seatAssignments[seatId],
-			ticket_id: seatId,
-			"seat number": `A${seatId}`,
-		}));
+		const bookingInfo = selectedSeats.map((seatId) => {
+			const assignee = seatAssignments[seatId];
+			let assignedUserId;
+			if (assignee === "You") {
+				assignedUserId = user ? user.id : null;
+			} else {
+				const found = coBookers.find((co) => co.email === assignee);
+				assignedUserId = found ? found.id : null;
+			}
+			return {
+				event_id: eventId,
+				user_id: assignedUserId,
+				ticket_id: seatId,
+				"seat number": `A${seatId}`,
+			};
+		});
 		alert(JSON.stringify(bookingInfo, null, 2));
-
-		router.push(`/checkout?eventId=${eventId}&seats=${selectedSeats.join(",")}&coBookers=${coBookersQuery}&assignments=${seatAssignmentsQuery}`);
 	};
 
 	return (
@@ -259,9 +238,23 @@ function GroupBookingModal({ selectedSeats, eventId, onClose }: { selectedSeats:
 					<h3 className="text-black font-semibold mb-2">Co-Bookers List:</h3>
 					<ul>
 						{coBookers.map((coBooker) => (
-							<li key={coBooker} className="flex justify-between items-center bg-gray-100 p-3 rounded-lg mb-2">
-								<span className="text-black">{coBooker}</span>
-								<button onClick={() => removeCoBooker(coBooker)} className="text-red-500">
+							<li key={coBooker.id} className="flex justify-between items-center bg-gray-100 p-3 rounded-lg mb-2">
+								<span className="text-black">{coBooker.email}</span>
+								<button
+									onClick={() => {
+										setCoBookers(coBookers.filter((co) => co.email !== coBooker.email));
+										setSeatAssignments((prev) => {
+											const updated = { ...prev };
+											Object.keys(updated).forEach((seatId) => {
+												if (updated[Number(seatId)] === coBooker.email) {
+													updated[Number(seatId)] = "";
+												}
+											});
+											return updated;
+										});
+									}}
+									className="text-red-500"
+								>
 									Remove
 								</button>
 							</li>
@@ -273,19 +266,24 @@ function GroupBookingModal({ selectedSeats, eventId, onClose }: { selectedSeats:
 				<div className="mt-6">
 					<h3 className="text-black font-semibold">Assign Seats:</h3>
 					{selectedSeats.map((seatId) => {
-						const seatLabel = `A${seatId}`; // Replace this with the actual seat label from your API if needed
-
+						const seatLabel = `A${seatId}`;
 						return (
 							<div key={seatId} className="flex justify-between items-center bg-gray-100 p-3 rounded-lg mb-2">
 								<span className="text-black font-medium">Seat {seatLabel}</span>
-								<select className="p-2 border rounded text-black" value={seatAssignments[seatId] || ""} onChange={(e) => assignSeat(seatId, e.target.value)}>
+								<select
+									className="p-2 border rounded text-black"
+									value={seatAssignments[seatId] || ""}
+									onChange={(e) => {
+										setSeatAssignments((prev) => ({ ...prev, [seatId]: e.target.value }));
+									}}
+								>
 									<option value="">Select co-booker</option>
 									<option value="You" disabled={assignedUsers.has("You") && seatAssignments[seatId] !== "You"}>
 										You
 									</option>
 									{coBookers.map((coBooker) => (
-										<option key={coBooker} value={coBooker} disabled={assignedUsers.has(coBooker) && seatAssignments[seatId] !== coBooker}>
-											{coBooker}
+										<option key={coBooker.id} value={coBooker.email} disabled={assignedUsers.has(coBooker.email) && seatAssignments[seatId] !== coBooker.email}>
+											{coBooker.email}
 										</option>
 									))}
 								</select>
