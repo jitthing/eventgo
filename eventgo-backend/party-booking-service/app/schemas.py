@@ -18,3 +18,11 @@ class SplitPaymentResponse(BaseModel):
     event_id: str
     seats: list[str]
 
+class HealthResponse(BaseModel):
+    status: str
+    stripe_configured: bool
+
+class PartyBookingRequest(BaseModel):
+    participant_emails: list[str]
+    total_amount: float
+    seats: list[str]

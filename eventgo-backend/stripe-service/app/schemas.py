@@ -90,8 +90,8 @@ class SplitPaymentResponse(BaseModel):
     event_id: str
     seats: list[str]
 
-class SplitPaymentStatusRequest(BaseModel):
-    split_payment_id: str
+# class SplitPaymentStatusRequest(BaseModel):
+#     split_payment_id: str
 
 class PaymentLinkStatus(BaseModel):
     payment_link_id: str
@@ -99,15 +99,15 @@ class PaymentLinkStatus(BaseModel):
     status: str  # 'unpaid', 'paid', 'expired'
     amount: int
 
-class SplitPaymentStatusResponse(BaseModel):
-    split_payment_id: str
-    event_id: str
-    seats: list[str]
-    total_amount: int
-    status: str  # 'pending', 'completed', 'expired', 'partially_paid'
-    payment_links: list[PaymentLinkStatus]
-    amount_paid: int
-    amount_pending: int
+# class SplitPaymentStatusResponse(BaseModel):
+#     split_payment_id: str
+#     event_id: str
+#     seats: list[str]
+#     total_amount: int
+#     status: str  # 'pending', 'completed', 'expired', 'partially_paid'
+#     payment_links: list[PaymentLinkStatus]
+#     amount_paid: int
+#     amount_pending: int
 
 class CreatePaymentLinkRequest(BaseModel):
     amount: int

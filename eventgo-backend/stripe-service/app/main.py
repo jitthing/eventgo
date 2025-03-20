@@ -25,7 +25,7 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
 # Global dictionary to store split payment records
 # In production, use a database instead
-split_payments = {}
+# split_payments = {}
 
 @app.post("/create-payment-intent", response_model=schemas.PaymentIntentResponse)
 async def create_payment_intent(payment: schemas.PaymentIntent):
@@ -256,7 +256,7 @@ async def generate_payment_link(
 @app.post("/create-payment-link", response_model=schemas.PaymentLinkResponse)
 async def create_payment_link(request: schemas.CreatePaymentLinkRequest):
     """
-    Create a single payment link for a customer
+    Create a single payment link for a customer. Used for ticket transfer
     """
     try:
         metadata = {
@@ -321,14 +321,14 @@ async def create_split_payment(request: schemas.CreateSplitPaymentRequest):
             
             payment_links.append(payment_link)
         
-        # Store the split payment info (in production, use a database)
-        split_payments[split_payment_id] = {
-            "event_id": request.event_id,
-            "seats": request.seats,
-            "total_amount": total_amount,
-            "payment_links": payment_links,
-            "created_at": int(time.time())
-        }
+        # # Store the split payment info (in production, use a database)
+        # split_payments[split_payment_id] = {
+        #     "event_id": request.event_id,
+        #     "seats": request.seats,
+        #     "total_amount": total_amount,
+        #     "payment_links": payment_links,
+        #     "created_at": int(time.time())
+        # }
         
         return {
             "split_payment_id": split_payment_id, 
@@ -341,8 +341,8 @@ async def create_split_payment(request: schemas.CreateSplitPaymentRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/split-payment-status", response_model=schemas.SplitPaymentStatusResponse)
-async def get_split_payment_status(request: schemas.SplitPaymentStatusRequest):
+# @app.post("/split-payment-status", response_model=schemas.SplitPaymentStatusResponse)
+# async def get_split_payment_status(request: schemas.SplitPaymentStatusRequest):
     """
     Check the status of a split payment by retrieving all payment links
     """

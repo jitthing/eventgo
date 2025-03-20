@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+import os
+import stripe
 import requests
+import json
 from . import schemas
 from dotenv import load_dotenv
 
@@ -15,6 +18,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
+
+# Define the base URL for the stripe service - use the Docker service name
+STRIPE_SERVICE_URL = os.environ.get("STRIPE_SERVICE_URL", "http://stripe-service:8000")
+TICKET_INVENTORY_URL = os.environ.get("TICKET_INVENTORY_URL", "http://ticket-inventory:8080")
 
 # this will be moved to orchestrator to react to webhook events
 @app.post("/webhook", response_model=schemas.WebhookResponse)
@@ -65,23 +74,37 @@ async def stripe_webhook(request: Request):
             
             # If this is a split payment link checkout
             if session.metadata and "split_payment_id" in session.metadata:
-                split_payment_id = session.metadata.get("split_payment_id")
-                if split_payment_id in split_payments:
-                    print(f"Payment for split payment {split_payment_id} by {session.metadata.get('participant_email')} completed!")
+                # split_payment_id = session.metadata.get("split_payment_id")
+                # if split_payment_id in split_payments:
+                #     print(f"Payment for split payment {split_payment_id} by {session.metadata.get('participant_email')} completed!")
                     
                     # Extract the payment intent ID
-                    payment_intent_id = session.payment_intent
-                    print(f"Payment Intent ID: {payment_intent_id}")
-                    # need to use this payment id to update ticket service for refund
+                payment_intent_id = session.payment_intent
+                participant_email = session.metadata.get("participant_email")
+                print(f"Payment Intent ID: {payment_intent_id}")
+                # need to use this payment id to update ticket service for update, for future use for refund
                     
-                    # Check if all payments are complete
-                    # In a real implementation, you'd update your database
-                    status = await get_split_payment_status(schemas.SplitPaymentStatusRequest(split_payment_id=split_payment_id))
-                    if status.status == "completed":
-                        print(f"Split payment {split_payment_id} fully completed!")
-                        # You would finalize the booking here
+                ticket_confirm_req = {
+                    payment_intent: payment_intent_id
+                }
 
-        return {"status": "success"}
+                try:
+                    confirm_ticket_endpoint = f"{TICKET_INVENTORY_URL}/confirm"
+                    print(f"Calling stripe service at: {confirm_ticket_endpoint}")
+                    ticket_response = requests.post(
+                        confirm_ticket_endpoint, 
+                        json=ticket_confirm_req,
+                        timeout=10)
+                    
+                    ticket_response_object = ticket_response.json()
+
+                    # publish to queue
+                    return {"status": "success"}
+                except Exception as e:
+                    print(f"Unexpected error: {str(e)}")
+                    return {"status": "error", "message": f"Unexpected error: {str(e)}"}
+
+        
     except Exception as e:
         # Log the error details
         print(f"Error processing webhook: {str(e)}")
@@ -89,7 +112,131 @@ async def stripe_webhook(request: Request):
         # In development, this allows us to see events even when verification fails
         return {"status": "success"}
 
+@app.post("/party-booking")
+async def party_booking():
+    """
+    ORCHESTRATOR FUNCTION TO HANDLE PARTY BOOKING
+    1. Initiate split payment to payment service
+    2. Publish payment link and payment receiver to RabbitMQ Queue
 
-@app.get("/health")
+    Split Payment Link Request
+    {
+        "event_id": "event_12345",
+        "seats": ["B12", "B13", "B14"],
+        "currency": "sgd",
+        "participants": 
+            [
+                {
+                    "email": "alice@example.com",
+                    "name": "Alice Smith",
+                    "amount": 3000
+                },
+                {
+                    "email": "bob@example.com",
+                    "name": "Bob Johnson",
+                    "amount": 3000
+                },
+                {
+                    "email": "charlie@example.com",
+                    "name": "Charlie Davis",
+                    "amount": 3000
+                }
+            ],
+        "description": "Concert Tickets for The Amazing Band",
+        "redirect_url": "http://localhost:3000"
+        }
+
+        Payment Link Response
+        {
+        "split_payment_id":"616b0557-0ac5-484c-b2a3-a216cd596128",
+        "payment_links":
+            [
+                {
+                "payment_link_id":"plink_1R3YoNEJx3PoDEOV0K3xFtOH",
+                "url":"https://buy.stripe.com/test_4gw4iO4ZU10R79S28w",
+                "participant_email":"alice@example.com",
+                "amount":3000,
+                "expires_at":1742285654
+                },
+                {
+                "payment_link_id":"plink_1R3YoNEJx3PoDEOVIGgmiVSw",
+                "url":"https://buy.stripe.com/test_fZe16CgIC6lbeCk8wV",
+                "participant_email":"bob@example.com",
+                "amount":3000,
+                "expires_at":1742285655
+                }
+            ],
+            "total_amount":9000,
+            "event_id":"event_12345",
+            "seats":["B12","B13","B14"]
+        }
+    """
+    # get links and email
+    split_payments_req = {
+        "event_id": "event_12345",
+        "seats": ["B12", "B13", "B14"],
+        "currency": "sgd",
+        "participants": 
+            [
+                {
+                    "email": "alice@example.com",
+                    "name": "Alice Smith",
+                    "amount": 3000
+                },
+                {
+                    "email": "bob@example.com",
+                    "name": "Bob Johnson",
+                    "amount": 3000
+                },
+                {
+                    "email": "charlie@example.com",
+                    "name": "Charlie Davis",
+                    "amount": 3000
+                }
+            ],
+        "description": "Concert Tickets for The Amazing Band",
+        "redirect_url": "http://localhost:3000"
+        }
+    try:
+        # Use the Docker service name and port instead of localhost
+        create_split_endpoint = f"{STRIPE_SERVICE_URL}/create-split-payment"
+        print(f"Calling stripe service at: {create_split_endpoint}")
+        
+        payment_links_response = requests.post(
+            create_split_endpoint, 
+            json=split_payments_req,  # Fixed variable name here - was split_payments
+            timeout=10  # Add timeout to prevent hanging requests
+        )
+        
+        if payment_links_response.status_code != 200:
+            print(f"Error response from stripe service: {payment_links_response.status_code}")
+            print(f"Response content: {payment_links_response.text}")
+            return {"status": "error", "message": f"Stripe service returned {payment_links_response.status_code}"}
+            
+        payment_link_objects = payment_links_response.json()
+        
+    
+        # Access the payment_links array correctly
+        for payment_link_obj in payment_link_objects.get("payment_links", []):
+            print(f"{payment_link_obj.get('url')} belongs to {payment_link_obj.get('participant_email')}")
+
+        # publish to queue
+
+        return {"status": "ok", "data": payment_link_objects}
+    except requests.exceptions.RequestException as e:
+        print(f"Connection error: {str(e)}")
+        return {"status": "error", "message": f"Connection to stripe service failed: {str(e)}"}
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        return {"status": "error", "message": f"Unexpected error: {str(e)}"}
+    
+
+async def ticket_booking():
+    """
+    Handle ticket reservation upon checkout.session.completed from webhook
+    """
+    return None
+
+@app.get("/health", response_model=schemas.HealthResponse)
 def get_health():
-    return {"status": "healthy"}
+    return {"status": "healthy", "stripe_configured": bool(stripe.api_key)}
