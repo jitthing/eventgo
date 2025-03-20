@@ -199,7 +199,7 @@ public class TicketController {
             priceMap.put(category, price);
         }
         
-        // Process each event
+        // Process each event. Note: Each seat may now optionally include a "user_id"
         Map<String, Object> response = new HashMap<>();
         List<Map<String, Object>> allCreatedTickets = new ArrayList<>();
         
@@ -213,6 +213,7 @@ public class TicketController {
                 if (priceMap.containsKey(category)) {
                     seat.put("price", priceMap.get(category));
                 }
+                // Optional: "user_id" can be provided here
             }
             
             Map<String, Object> eventResponse = ticketService.createTickets(eventId, seats);
@@ -225,5 +226,6 @@ public class TicketController {
         
         return ResponseEntity.ok(response);
     }
+
 
 }

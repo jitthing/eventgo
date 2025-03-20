@@ -177,6 +177,11 @@ public class TicketService {
             ticket.setStatus(status); 
             ticket.setPrice(price);
             
+            // NEW: Optionally set user_id if provided in the seatData
+            if (seatData.containsKey("user_id")) {
+                ticket.setUserId(((Number) seatData.get("user_id")).longValue());
+            }
+            
             createdTickets.add(ticket);
         }
         
@@ -202,6 +207,7 @@ public class TicketService {
         
         return response;
     }
+    
 
     @Transactional
     public Map<String, Object> cancelTicketsByEvent(Long eventId) {
