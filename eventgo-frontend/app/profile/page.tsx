@@ -22,10 +22,12 @@ export default function ProfilePage() {
 
 	useEffect(() => {
 		async function fetchData() {
-			if (!user) {
+			let currentUser = user;
+			// If user is null, fetch it first
+			if (!currentUser) {
 				try {
-					const userData = await fetchUser();
-					setUser(userData);
+					currentUser = await fetchUser();
+					setUser(currentUser);
 				} catch (err) {
 					router.push("/login");
 					return;
@@ -33,7 +35,7 @@ export default function ProfilePage() {
 			}
 			try {
 				// Get the user's tickets from the ticket service
-				const userTickets = await getUserTickets(user!.id);
+				const userTickets = await getUserTickets(currentUser.id);
 				// Fetch event details for each ticket, making sure to use the correct property: eventId.
 				const ticketsWithEvent = await Promise.all(
 					userTickets.map(async (ticket: any) => {
@@ -58,7 +60,6 @@ export default function ProfilePage() {
 
 				setGroupedTickets(Object.values(grouped));
 			} catch (err) {
-				console.log(err);
 				setError("Failed to load tickets.");
 			} finally {
 				setLoading(false);
