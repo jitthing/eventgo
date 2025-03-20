@@ -187,5 +187,7 @@ export async function getUserTickets(user_id: number): Promise<Ticket[]> {
   if (!response.ok) {
     throw new Error('Failed to fetch user tickets');
   }
-  return response.json();
+  const ticketResponse = await response.json();
+  // Return the array of tickets from the "data" field
+  return ticketResponse.data;
 }

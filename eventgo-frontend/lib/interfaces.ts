@@ -59,7 +59,7 @@ export enum TicketStatus {
 
 export interface Ticket {
   ticket_id: number;
-  event_id: number;
+  eventId: number;
   seat_number: string;
   category: TicketCategory;
   price: number;
