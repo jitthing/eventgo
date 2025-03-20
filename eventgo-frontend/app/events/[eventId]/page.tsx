@@ -8,6 +8,8 @@ import Image from "next/image";
 import SeatSelection from "@/components/SeatSelection";
 import BackButton from "@/components/BackButton";
 import Link from "next/link";
+import { searchUsers } from "@/lib/auth";
+import { useAuth } from "@/context/AuthContext";
 
 export default function EventPage() {
 	const params = useParams();
@@ -115,9 +117,8 @@ function GroupBookingModal({ selectedSeats, eventId, onClose }: { selectedSeats:
 	const router = useRouter();
 	const [coBookers, setCoBookers] = useState<string[]>([]);
 	const [email, setEmail] = useState("");
-	const [seatAssignments, setSeatAssignments] = useState<{
-		[seatId: number]: string;
-	}>({});
+	const [errorMsg, setErrorMsg] = useState("");
+	const [seatAssignments, setSeatAssignments] = useState<{ [seatId: number]: string }>({});
 
 	const totalCoBookersNeeded = selectedSeats.length - 1; // User is already one of the ticket holders
 	const remainingCoBookers = totalCoBookersNeeded - coBookers.length;
@@ -125,10 +126,44 @@ function GroupBookingModal({ selectedSeats, eventId, onClose }: { selectedSeats:
 	// Get all assigned users
 	const assignedUsers = new Set(Object.values(seatAssignments));
 
-	const addCoBooker = () => {
-		if (email && !coBookers.includes(email) && coBookers.length < totalCoBookersNeeded) {
-			setCoBookers([...coBookers, email]);
-			setEmail("");
+	const addCoBooker = async () => {
+		setErrorMsg("");
+		if (!email) {
+			setErrorMsg("Please enter an email address.");
+			return;
+		}
+
+		// Validate email format
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email)) {
+			setErrorMsg("Invalid email format.");
+			return;
+		}
+
+		try {
+			const searchResult = await searchUsers(email);
+			// Check if the response is an array of users (valid response)
+			if (Array.isArray(searchResult)) {
+				if (searchResult.length === 0) {
+					setErrorMsg("No user found with this email.");
+					return;
+				}
+			} else if (searchResult && searchResult.message) {
+				// Handle the case where the endpoint returns an error object
+				setErrorMsg(searchResult.message);
+				return;
+			} else {
+				setErrorMsg("Unexpected response from user search.");
+				return;
+			}
+
+			if (!coBookers.includes(email) && coBookers.length < totalCoBookersNeeded) {
+				setCoBookers([...coBookers, email]);
+				setEmail("");
+			}
+		} catch (error) {
+			console.error("Error searching for user:", error);
+			setErrorMsg("An error occurred while searching for the user.");
 		}
 	};
 
@@ -171,6 +206,14 @@ function GroupBookingModal({ selectedSeats, eventId, onClose }: { selectedSeats:
 		const coBookersQuery = encodeURIComponent(coBookers.join(","));
 		const seatAssignmentsQuery = encodeURIComponent(JSON.stringify(seatAssignments));
 
+		const bookingInfo = selectedSeats.map((seatId) => ({
+			event_id: eventId,
+			user_id: seatAssignments[seatId],
+			ticket_id: seatId,
+			"seat number": `A${seatId}`,
+		}));
+		alert(JSON.stringify(bookingInfo, null, 2));
+
 		router.push(`/checkout?eventId=${eventId}&seats=${selectedSeats.join(",")}&coBookers=${coBookersQuery}&assignments=${seatAssignmentsQuery}`);
 	};
 
@@ -187,15 +230,27 @@ function GroupBookingModal({ selectedSeats, eventId, onClose }: { selectedSeats:
 				{/* Input for Co-Bookers */}
 				<div className="mt-6">
 					<label className="text-black font-semibold">Enter co-booker email:</label>
-					<div className="flex mt-2">
-						<input type="email" placeholder="Enter email..." value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-2 border rounded text-black" />
-						<button
-							onClick={addCoBooker}
-							className={`ml-2 py-2 px-4 rounded ${!email || coBookers.length >= totalCoBookersNeeded ? "bg-gray-400 cursor-not-allowed text-white" : "bg-blue-600 text-white hover:bg-blue-700"}`}
-							disabled={!email || coBookers.length >= totalCoBookersNeeded}
-						>
-							Add
-						</button>
+					<div className="flex mt-2 flex-col">
+						<div className="flex">
+							<input
+								type="email"
+								placeholder="Enter email..."
+								value={email}
+								onChange={(e) => {
+									setEmail(e.target.value);
+									setErrorMsg("");
+								}}
+								className={`w-full p-2 border rounded text-black ${errorMsg ? "border-red-500" : "border-gray-300"}`}
+							/>
+							<button
+								onClick={addCoBooker}
+								className={`ml-2 py-2 px-4 rounded ${!email || coBookers.length >= totalCoBookersNeeded ? "bg-gray-400 cursor-not-allowed text-white" : "bg-blue-600 text-white hover:bg-blue-700"}`}
+								disabled={!email || coBookers.length >= totalCoBookersNeeded}
+							>
+								Add
+							</button>
+						</div>
+						{errorMsg && <p className="mt-1 text-red-500 text-sm">{errorMsg}</p>}
 					</div>
 				</div>
 
