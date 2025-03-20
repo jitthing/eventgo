@@ -3,12 +3,11 @@
 import { useEffect, useState } from "react";
 import { useParams, notFound, useRouter } from "next/navigation";
 import { getEvent, getTicketsForEvent } from "@/lib/api"; // import getTicketsForEvent
-import { formatDate } from "@/lib/utils";
+import { formatEventDuration } from "@/lib/utils";
 import Image from "next/image";
 import SeatSelection from "@/components/SeatSelection";
 import BackButton from "@/components/BackButton";
 import Link from "next/link";
-import { format } from "date-fns";
 
 export default function EventPage() {
 	const params = useParams();
@@ -19,12 +18,6 @@ export default function EventPage() {
 	const [error, setError] = useState(false);
 	const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
 	const [isGroupBookingOpen, setIsGroupBookingOpen] = useState(false);
-
-	function formatEventDuration(dateString: string) {
-		const startDate = new Date(dateString);
-		const endDate = new Date(startDate.getTime() + 3 * 60 * 60 * 1000); // Add 3 hours
-		return `${format(startDate, "MMMM d, yyyy (h:mm a")} to ${format(endDate, "h:mm a")})`;
-	}
 
 	useEffect(() => {
 		if (!isNaN(eventId)) {

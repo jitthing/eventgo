@@ -2,57 +2,86 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { fetchUser, logoutUser } from "@/lib/auth";
-import { getUserOrders } from "@/lib/mock-orders";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext"; // ✅ Import AuthContext
+import { fetchUser } from "@/lib/auth";
+import { getUserTickets, getEvent } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { formatEventDuration } from "@/lib/utils";
+
+interface GroupedTickets {
+	event: any;
+	tickets: any[];
+}
 
 export default function ProfilePage() {
 	const router = useRouter();
-	const { user, setUser } = useAuth(); // ✅ Get user and setUser from AuthContext
-	const [orders, setOrders] = useState<any[]>([]);
+	const { user, setUser } = useAuth();
+	const [groupedTickets, setGroupedTickets] = useState<GroupedTickets[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
 		async function fetchData() {
-			try {
-				if (!user) {
+			if (!user) {
+				try {
 					const userData = await fetchUser();
-					setUser(userData); // ✅ Only fetch if user isn't in context
+					setUser(userData);
+				} catch (err) {
+					router.push("/login");
+					return;
 				}
-				const ordersData: any[] = await getUserOrders();
-				setOrders(ordersData);
+			}
+			try {
+				// Get the user's tickets from the ticket service
+				const userTickets = await getUserTickets(user!.id);
+				// Fetch event details for each ticket, making sure to use the correct property: eventId.
+				const ticketsWithEvent = await Promise.all(
+					userTickets.map(async (ticket: any) => {
+						try {
+							const event = await getEvent(ticket.eventId);
+							return { ...ticket, event };
+						} catch (err) {
+							return { ...ticket, event: null };
+						}
+					})
+				);
+
+				// Group tickets by eventId
+				const grouped = ticketsWithEvent.reduce((acc: any, ticket: any) => {
+					const key = ticket.eventId;
+					if (!acc[key]) {
+						acc[key] = { event: ticket.event, tickets: [] };
+					}
+					acc[key].tickets.push(ticket);
+					return acc;
+				}, {});
+
+				setGroupedTickets(Object.values(grouped));
+			} catch (err) {
+				console.log(err);
+				setError("Failed to load tickets.");
+			} finally {
 				setLoading(false);
-			} catch {
-				router.push("/login");
 			}
 		}
 		fetchData();
-	}, [router, user, setUser]);
+	}, [user, setUser, router]);
 
-	const upcomingEvents = orders.filter((order) => order.status === "Upcoming");
-	const pastEvents = orders.filter((order) => order.status === "Completed");
-
-	async function handleLogout() {
-		try {
-			await logoutUser();
-			setUser(null); // ✅ Update global state
-			router.replace("/login"); // ✅ Use replace to prevent going back
-		} catch (err) {
-			console.error("Logout error:", err);
-			router.replace("/login");
-		}
+	async function handleTransfer(ticketId: number) {
+		// Placeholder for transfer functionality
+		alert(`Transfer functionality coming soon for ticket ${ticketId}`);
 	}
 
 	return (
-		<div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
-			<div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8">
-				{/* User Profile Section */}
+		<div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 space-y-10">
+			{/* User Profile and Settings Section */}
+			<div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8 space-y-6">
+				{/* Profile Details */}
 				<div className="flex items-center space-x-4">
 					<img src={user?.avatar || "https://api.dicebear.com/6.x/initials/svg?seed=User"} alt="Profile Avatar" className="w-16 h-16 rounded-full" />
 					<div>
-						<h1 className="text-3xl font-bold text-black">{user?.full_name || "User"}</h1> {/* ✅ Display full name */}
-						<p className="text-black text-lg">{user?.email}</p> {/* ✅ Show email */}
+						<h1 className="text-3xl font-bold text-black">{user?.full_name || "User"}</h1>
+						<p className="text-black text-lg">{user?.email}</p>
 					</div>
 				</div>
 
@@ -77,62 +106,74 @@ export default function ProfilePage() {
 						</li>
 					</ul>
 				</div>
+			</div>
 
-				{/* Upcoming Events Section */}
-				<div className="mt-8">
-					<h3 className="text-2xl font-bold text-black">🎟️ Upcoming Events</h3>
-					<p className="text-gray-600">These are your upcoming events.</p>
-					{loading ? (
-						<p className="text-black mt-4">Loading...</p>
-					) : upcomingEvents.length === 0 ? (
-						<p className="text-black mt-4">No upcoming events.</p>
-					) : (
-						<div className="space-y-6 mt-4">
-							{upcomingEvents.map((order) => (
-								<div key={order.id} className="p-6 bg-white border border-gray-200 shadow-md rounded-lg">
-									<h4 className="text-xl font-semibold text-black">{order.eventTitle}</h4>
-									<p className="text-lg text-black mt-1">📅 {order.eventDate}</p>
-									<p className="text-black">📍 {order.eventLocation}</p>
-									<p className="text-lg font-medium mt-2 text-black">🎟️ Seats: {order.seats.join(", ")}</p>
-									<p className="text-lg font-semibold text-blue-600 mt-2">💲Total Paid: ${order.total.toFixed(2)}</p>
-									<Link href={`/events/${order.eventId}`} className="mt-3 inline-block text-blue-600 hover:text-blue-800 font-medium">
-										View Event Details
-									</Link>
+			{/* Tickets Section */}
+			<div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8">
+				<h2 className="text-2xl font-bold text-black mb-4">My Tickets</h2>
+				{loading ? (
+					<p className="text-black text-center mt-4">Loading tickets...</p>
+				) : error ? (
+					<p className="text-red-500 text-center mt-4">{error}</p>
+				) : groupedTickets.length === 0 ? (
+					<p className="text-black">You have no tickets.</p>
+				) : (
+					groupedTickets.map((group: GroupedTickets) => (
+						<div key={group.event?.event_id || Math.random()} className="mb-8 border border-gray-200 rounded-lg overflow-hidden">
+							{/* Event Card Header */}
+							<div className="flex items-center bg-gray-100 p-4">
+								{group.event?.image_url && <img src={group.event.image_url} alt={group.event.title} className="w-20 h-20 object-cover rounded mr-4" />}
+								<div>
+									<h3 className="text-xl font-semibold text-black">
+										<Link href={`/events/${group.event?.event_id}`}>
+											<span className="hover:text-blue-600">{group.event?.title || "Event"}</span>
+										</Link>
+									</h3>
+									<p className="text-gray-600">{group.event?.venue}</p>
+									{group.event?.date && <p className="text-gray-600">{formatEventDuration(group.event.date)}</p>}{" "}
 								</div>
-							))}
-						</div>
-					)}
-				</div>
+							</div>
 
-				{/* Past Events Section */}
-				<div className="mt-8">
-					<h3 className="text-2xl font-bold text-black">📜 Past Events</h3>
-					<p className="text-gray-600">Your completed events history.</p>
-					{loading ? (
-						<p className="text-black mt-4">Loading...</p>
-					) : pastEvents.length === 0 ? (
-						<p className="text-black mt-4">No past events.</p>
-					) : (
-						<div className="space-y-6 mt-4">
-							{pastEvents.map((order) => (
-								<div key={order.id} className="p-6 bg-white border border-gray-200 shadow-md rounded-lg">
-									<h4 className="text-xl font-semibold text-black">{order.eventTitle}</h4>
-									<p className="text-lg text-black mt-1">📅 {order.eventDate}</p>
-									<p className="text-black">📍 {order.eventLocation}</p>
-									<p className="text-lg font-medium mt-2 text-black">🎟️ Seats: {order.seats.join(", ")}</p>
-									<p className="text-lg font-semibold text-green-600 mt-2">✅ Completed</p>
-									<Link href={`/events/${order.eventId}`} className="mt-3 inline-block text-blue-600 hover:text-blue-800 font-medium">
-										View Event Details
-									</Link>
-								</div>
-							))}
+							{/* Tickets for this event */}
+							<div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+								{group.tickets.map((ticket) => (
+									<div key={ticket.ticketId} className="p-4 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
+										<div className="flex justify-between items-center">
+											<p className="text-black font-medium">Seat: {ticket.seatNumber}</p>
+											{/* <span className={`text-sm font-medium ${ticket.status === "sold" ? "text-green-600" : ticket.status === "reserved" ? "text-yellow-600" : "text-gray-600"}`}>
+												{ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+											</span> */}
+										</div>
+										<p className="mt-1 text-black">Category: {ticket.category}</p>
+										<p className="mt-1 text-black">Price: ${Number(ticket.price).toFixed(2)}</p>
+										<div className="mt-4">
+											<button onClick={() => handleTransfer(ticket.ticketId)} className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors w-full">
+												Transfer Ticket
+											</button>
+										</div>
+									</div>
+								))}
+							</div>
 						</div>
-					)}
-				</div>
+					))
+				)}
 
-				{/* Logout */}
+				{/* Logout Section */}
 				<div className="mt-10 text-center">
-					<button onClick={handleLogout} className="bg-red-600 text-white py-3 px-6 rounded-md hover:bg-red-700 transition-colors">
+					<button
+						onClick={async () => {
+							try {
+								// Call your logout function if available, then clear the context
+								// e.g., await logoutUser();
+								setUser(null);
+								router.replace("/login");
+							} catch (err) {
+								console.error("Logout error:", err);
+								router.replace("/login");
+							}
+						}}
+						className="bg-red-600 text-white py-3 px-6 rounded hover:bg-red-700 transition-colors"
+					>
 						Log Out
 					</button>
 				</div>
