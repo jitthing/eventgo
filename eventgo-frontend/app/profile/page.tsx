@@ -7,6 +7,7 @@ import { fetchUser } from "@/lib/auth";
 import { getUserTickets, getEvent } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { formatEventDuration } from "@/lib/utils";
+import TransferModal from "@/components/TransferModal";
 
 interface GroupedTickets {
 	event: any;
@@ -17,6 +18,12 @@ export default function ProfilePage() {
 	const router = useRouter();
 	const { user, setUser } = useAuth();
 	const [groupedTickets, setGroupedTickets] = useState<GroupedTickets[]>([]);
+	const [transferTicket, setTransferTicket] = useState<{
+		ticketId: number;
+		eventId: number;
+		eventTitle: string;
+		seatNumber: string;
+	} | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
@@ -134,7 +141,6 @@ export default function ProfilePage() {
 									{group.event?.date && <p className="text-gray-600">{formatEventDuration(group.event.date)}</p>}{" "}
 								</div>
 							</div>
-
 							{/* Tickets for this event */}
 							<div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
 								{group.tickets.map((ticket) => (
@@ -148,13 +154,26 @@ export default function ProfilePage() {
 										<p className="mt-1 text-black">Category: {ticket.category}</p>
 										<p className="mt-1 text-black">Price: ${Number(ticket.price).toFixed(2)}</p>
 										<div className="mt-4">
-											<button onClick={() => handleTransfer(ticket.ticketId)} className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors w-full">
+											<button
+												onClick={() =>
+													setTransferTicket({
+														ticketId: ticket.ticketId,
+														eventId: group.event.event_id,
+														eventTitle: group.event.title,
+														seatNumber: ticket.seatNumber,
+													})
+												}
+												className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors w-full"
+											>
 												Transfer Ticket
 											</button>
 										</div>
 									</div>
 								))}
 							</div>
+							{transferTicket && (
+								<TransferModal ticketId={transferTicket.ticketId} eventId={transferTicket.eventId} eventTitle={transferTicket.eventTitle} seatNumber={transferTicket.seatNumber} onClose={() => setTransferTicket(null)} />
+							)}{" "}
 						</div>
 					))
 				)}
