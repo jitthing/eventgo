@@ -75,9 +75,58 @@ export default function ProfilePage() {
 		fetchData();
 	}, [user, setUser, router]);
 
-	async function handleTransfer(ticketId: number) {
-		// Placeholder for transfer functionality
-		alert(`Transfer functionality coming soon for ticket ${ticketId}`);
+	if (loading) return <p className="text-center text-black mt-20">Loading...</p>;
+	if (error) return <p className="text-red-500 text-center mt-20">{error}</p>;
+
+	// ————— Admin Dashboard —————
+	if (user?.role === "admin") {
+		return (
+			<div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+				<div className="max-w-4xl mx-auto space-y-8">
+					<header className="bg-white shadow rounded-lg p-8 text-center">
+						<h1 className="text-5xl font-extrabold text-black mb-2">Admin Dashboard</h1>
+						<p className="text-xl text-gray-600">Hello, {user.full_name}! Manage every aspect of EventGo here.</p>
+					</header>
+
+					<section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+						{[
+							{ title: "Total Events", value: "128" },
+							{ title: "Pending Approvals", value: "5" },
+							{ title: "Total Users", value: "3,452" },
+						].map(({ title, value }) => (
+							<div key={title} className="bg-white rounded-lg shadow p-6 text-center">
+								<p className="text-sm font-medium text-gray-500">{title}</p>
+								<p className="text-3xl font-bold text-black mt-2">{value}</p>
+							</div>
+						))}
+					</section>
+
+					<section className="bg-white rounded-lg shadow p-8">
+						<h2 className="text-2xl font-semibold text-black mb-4">Quick Actions</h2>
+						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+							<Link href="/admin/events" className="py-4 px-6 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-center">
+								Manage Events
+							</Link>
+							<button className="py-4 px-6 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium">Create New Event</button>
+							<button className="py-4 px-6 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white font-medium">Review Ticket Requests</button>
+							<button className="py-4 px-6 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium">Manage Users</button>
+							<button className="py-4 px-6 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium">System Settings</button>
+							<button className="py-4 px-6 rounded-lg bg-gray-600 hover:bg-gray-700 text-white font-medium">View Reports</button>
+						</div>
+					</section>
+
+					<section className="bg-white rounded-lg shadow p-8">
+						<h2 className="text-2xl font-semibold text-black mb-4">Recent Activity</h2>
+						<ul className="space-y-3 text-gray-700">
+							<li>• Event “Summer Concert” was cancelled — 2 hours ago</li>
+							<li>• New user “jane.doe@example.com” registered — 5 hours ago</li>
+							<li>• Ticket transfer approved for Event ID 42 — 1 day ago</li>
+							<li>• Event “Tech Conference” created — 2 days ago</li>
+						</ul>
+					</section>
+				</div>
+			</div>
+		);
 	}
 
 	return (

@@ -141,6 +141,8 @@ async def read_users_me(current_user: models.User = Depends(get_current_user)):
         "id": current_user.id,
         "email": current_user.email,
         "full_name": current_user.full_name,
+        "role": current_user.role.value
+
     }
 
 
