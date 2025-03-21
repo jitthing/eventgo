@@ -8,6 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 import ConfirmModal from "@/components/ConfirmModal";
 import { Event } from "@/lib/interfaces";
+import AdminEventsSkeleton from "@/components/AdminEventsSkeleton";
 
 export default function AdminEventsPage() {
 	const { user, loading: authLoading } = useAuth();
@@ -64,7 +65,7 @@ export default function AdminEventsPage() {
 	};
 
 	if (authLoading || loading) {
-		return <p className="text-center text-black mt-20">Loading...</p>;
+		return <AdminEventsSkeleton />;
 	}
 
 	if (error) {

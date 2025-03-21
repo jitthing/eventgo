@@ -30,12 +30,18 @@ export async function getEvent(event_id: number): Promise<Event> {
  */
 export async function getAllEvents(): Promise<Event[]> {
   const response = await fetch(`${EVENTS_API_URL}/events`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch events");
-  }
-  const events: Event[] = await response.json();
+  if (!response.ok) throw new Error("Failed to fetch events");
 
-  return events.map((event) => {
+  const data = await response.json();
+
+  // Handle both plain‑array and wrapped responses
+  const eventsArray: Event[] = Array.isArray(data)
+    ? data
+    : Array.isArray(data.EventAPI)
+    ? data.EventAPI
+    : [];
+
+  return eventsArray.map((event) => {
     if (event.image_url && !event.image_url.startsWith("http")) {
       event.image_url = `${EVENTS_API_URL}/events/${event.event_id}/image`;
     }

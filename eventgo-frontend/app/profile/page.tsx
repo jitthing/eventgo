@@ -8,7 +8,7 @@ import { getUserTickets, getEvent } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { formatEventDuration } from "@/lib/utils";
 import TransferModal from "@/components/TransferModal";
-
+import ProfileSkeleton from "@/components/ProfileSkeleton";
 interface GroupedTickets {
 	event: any;
 	tickets: any[];
@@ -75,7 +75,7 @@ export default function ProfilePage() {
 		fetchData();
 	}, [user, setUser, router]);
 
-	if (loading) return <p className="text-center text-black mt-20">Loading...</p>;
+	if (loading) return <ProfileSkeleton />;
 	if (error) return <p className="text-red-500 text-center mt-20">{error}</p>;
 
 	// ————— Admin Dashboard —————
