@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { fetchUser } from "@/lib/auth";
+import { fetchUser, logoutUser } from "@/lib/auth";
 import { getUserTickets, getEvent } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { formatEventDuration } from "@/lib/utils";
@@ -124,6 +124,19 @@ export default function ProfilePage() {
 							<li>• Event “Tech Conference” created — 2 days ago</li>
 						</ul>
 					</section>
+
+					<div className="mt-10 text-center">
+						<button
+							onClick={async () => {
+								await logoutUser(); // ← clear server session/cookie
+								setUser(null); // ← clear client state
+								router.replace("/login");
+							}}
+							className="bg-red-600 text-white py-3 px-6 rounded hover:bg-red-700 transition-colors"
+						>
+							Log Out
+						</button>
+					</div>
 				</div>
 			</div>
 		);
@@ -232,9 +245,8 @@ export default function ProfilePage() {
 					<button
 						onClick={async () => {
 							try {
-								// Call your logout function if available, then clear the context
-								// e.g., await logoutUser();
-								setUser(null);
+								await logoutUser(); // ← clear server session/cookie
+								setUser(null); // ← clear client state
 								router.replace("/login");
 							} catch (err) {
 								console.error("Logout error:", err);
