@@ -21,6 +21,8 @@ export default function EventPage() {
 	const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
 	const [isGroupBookingOpen, setIsGroupBookingOpen] = useState(false);
 
+	const { user } = useAuth();
+
 	useEffect(() => {
 		if (!isNaN(eventId)) {
 			(async () => {
@@ -28,7 +30,6 @@ export default function EventPage() {
 					const fetchedEvent = await getEvent(eventId);
 					const tickets = await getTicketsForEvent(eventId);
 
-					// Here is the workaround:
 					(fetchedEvent as any).capacity = tickets.length;
 
 					setEvent(fetchedEvent);
@@ -64,7 +65,7 @@ export default function EventPage() {
 
 			<div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
 				<div className="relative w-full h-96 md:h-[500px] rounded-lg overflow-hidden">
-					<Image src={event.image_url} alt={event.title} fill className="object-cover" />
+					<Image src={event.image_url} alt={event.title} fill className="object-contain" />
 				</div>
 
 				<div className="p-6 bg-white shadow-lg rounded-lg">
@@ -88,18 +89,29 @@ export default function EventPage() {
 					<SeatSelection eventId={event.event_id} selectedSeats={selectedSeats} toggleSeat={toggleSeat} />
 
 					<div className="mt-6 space-y-3">
-						<Link
-							href={`/stripe-payment?eventId=${eventId}&seats=${selectedSeats.join(",")}&total=100`}
-							className={`block text-center bg-blue-600 text-white font-medium py-3 px-8 rounded-md 
-                hover:bg-blue-700 transition-colors ${selectedSeats.length === 0 ? "opacity-50 pointer-events-none" : ""}`}
+						<button
+							onClick={() => {
+								if (user) {
+									router.push(`/stripe-payment?eventId=${eventId}&seats=${selectedSeats.join(",")}&total=100`);
+								} else {
+									router.push("/login");
+								}
+							}}
+							className={`block w-full text-center bg-blue-600 text-white font-medium py-3 px-8 rounded-md hover:bg-blue-700 transition-colors ${selectedSeats.length === 0 ? "opacity-50 pointer-events-none" : ""}`}
+							disabled={selectedSeats.length === 0}
 						>
 							Buy Tickets
-						</Link>
+						</button>
 
 						<button
-							onClick={openGroupBooking}
-							className={`block w-full text-center bg-green-600 text-white font-medium py-3 px-8 rounded-md 
-                hover:bg-green-700 transition-colors ${selectedSeats.length < 2 ? "opacity-50 cursor-not-allowed" : ""}`}
+							onClick={() => {
+								if (user) {
+									openGroupBooking();
+								} else {
+									router.push("/login");
+								}
+							}}
+							className={`block w-full text-center bg-green-600 text-white font-medium py-3 px-8 rounded-md hover:bg-green-700 transition-colors ${selectedSeats.length < 2 ? "opacity-50 cursor-not-allowed" : ""}`}
 							disabled={selectedSeats.length < 2}
 						>
 							Buy Tickets as A Group (Split Payment)
