@@ -140,14 +140,14 @@ export default function EventPage() {
               onClick={() => {
                 if (user) {
                   router.push(
-                    `/stripe-payment?eventId=${eventId}&seats=${selectedSeats
+                    `/payment?eventId=${eventId}&seats=${selectedSeats
                       .map((seatId) => {
                         const seat = availableSeats.find(
                           (s) => s.id === seatId
                         );
                         return seat?.seat_number || "";
                       })
-                      .join(",")}}&total=${totalPrice}`
+                      .join(",")}&total=${totalPrice}`
                   );
                 } else {
                   router.push("/login");
