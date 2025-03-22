@@ -90,7 +90,7 @@ async def stripe_webhook(request: Request):
 
                 try:
                     confirm_ticket_endpoint = f"{TICKET_INVENTORY_URL}/confirm"
-                    print(f"Calling stripe service at: {confirm_ticket_endpoint}")
+                    print(f"Calling ticket service at: {confirm_ticket_endpoint}")
                     ticket_response = requests.post(
                         confirm_ticket_endpoint, 
                         json=ticket_confirm_req,
@@ -113,7 +113,7 @@ async def stripe_webhook(request: Request):
         return {"status": "success"}
 
 @app.post("/party-booking")
-async def party_booking():
+async def party_booking(request: schemas.PartyBookingRequest):
     """
     ORCHESTRATOR FUNCTION TO HANDLE PARTY BOOKING
     1. Initiate split payment to payment service
@@ -172,6 +172,12 @@ async def party_booking():
         }
     """
     # get links and email
+    print(request.items)
+    participants = []
+    to_split = request.total_price / len(request.items)
+    for item in request.items:
+        participants.append({item.user_id, to_split})
+    
     split_payments_req = {
         "event_id": "event_12345",
         "seats": ["B12", "B13", "B14"],

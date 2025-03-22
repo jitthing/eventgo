@@ -22,7 +22,11 @@ class HealthResponse(BaseModel):
     status: str
     stripe_configured: bool
 
+class PartyBookingRequestItem(BaseModel):
+    event_id: int
+    user_id: str
+    ticket_id: int
 class PartyBookingRequest(BaseModel):
-    participant_emails: list[str]
-    total_amount: float
-    seats: list[str]
+    items: List[PartyBookingRequestItem]
+    total_price: int
+    reservation_id: int
