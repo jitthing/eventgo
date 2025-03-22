@@ -342,6 +342,17 @@ function GroupBookingModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(send),
         });
+
+        if (response.ok) {
+          router.push(
+            `/confirmation?eventId=${eventId}&seats=${selectedSeats
+              .map((seatId) => {
+                const seat = availableSeats.find((s) => s.id === seatId);
+                return seat?.seat_number || "";
+              })
+              .join(",")}&total=${totalPrice}`
+          );
+        }
       } catch (e) {
         console.error(e);
       }
