@@ -169,18 +169,8 @@ services:
     build: ./booking-service
     ports:
       - "8007:8000"
-    # env_file:
-    #   - ./booking-service/.env
-    environment:
-      - springdoc.swagger-ui.path=/docs
-      - server.port=8000
-      - TICKETS_SERVICE_URL=http://tickets-service:8000
-      - STRIPE_SERVICE_URL=http://stripe-service:8000
-      - AUTH_SERVICE_URL=http://auth-service:8000
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
-      - RABBITMQ_DEFAULT_USER=rabbitmqusername
-      - RABBITMQ_DEFAULT_PASS=rabbitmqpassword
+    env_file:
+      - ./booking-service/.env
 
     volumes:
       - ./booking-service:/src

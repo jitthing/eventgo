@@ -14,9 +14,9 @@ public interface BookingService {
 
     ProcessBookingResponseDTO processBooking(ProcessBookingRequestDTO request);
 
-    BookingDetailsResponseDTO getBookingDetails(UUID bookingId);
+    // BookingDetailsResponseDTO getBookingDetails(UUID bookingId);
 
-    CancelBookingResponseDTO cancelBooking(UUID bookingId);
+    // CancelBookingResponseDTO cancelBooking(UUID bookingId);
 
     String test();
 
