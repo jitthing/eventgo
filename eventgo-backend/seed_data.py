@@ -131,6 +131,8 @@ def seed_events(num_events=6) -> list:
             "venue": "Madison Square Garden",
             "is_featured": True,
             "image_url": "https://media1.s-nbcnews.com/i/rockcms/2025-01/351270/250104-LeBron-James-ch-0953-26ecee_e08d57a40aaa073423abe1ed6d5e5988584a1a1e.jpg",
+            "capacity": 50,
+            "date": "2025-03-13T12:34:56.789123"
         },
         {
             "title": "Coldplay: Music of the Spheres Tour",
@@ -141,6 +143,8 @@ def seed_events(num_events=6) -> list:
             "venue": "National Stadium",
             "is_featured": True,
             "image_url": "https://media1.s-nbcnews.com/i/rockcms/2025-01/351270/250104-LeBron-James-ch-0953-26ecee_e08d57a40aaa073423abe1ed6d5e5988584a1a1e.jpg",
+            "capacity": 55,
+            "date": "2025-03-13T12:34:56.789123"
         },
         {
             "title": "TEDx Talks: Future of AI",
@@ -151,6 +155,8 @@ def seed_events(num_events=6) -> list:
             "venue": "MIT Auditorium",
             "is_featured": True,
             "image_url": "https://media1.s-nbcnews.com/i/rockcms/2025-01/351270/250104-LeBron-James-ch-0953-26ecee_e08d57a40aaa073423abe1ed6d5e5988584a1a1e.jpg",
+            "capacity": 60,
+            "date": "2025-03-13T12:34:56.789123"
         },
         {
             "title": "F1 Singapore Grand Prix",
@@ -161,6 +167,8 @@ def seed_events(num_events=6) -> list:
             "venue": "Marina Bay Circuit",
             "is_featured": False,
             "image_url": "https://media1.s-nbcnews.com/i/rockcms/2025-01/351270/250104-LeBron-James-ch-0953-26ecee_e08d57a40aaa073423abe1ed6d5e5988584a1a1e.jpg",
+            "capacity": 150,
+            "date": "2025-03-13T12:34:56.789123"
         },
         {
             "title": "Anime Expo 2025",
@@ -171,6 +179,8 @@ def seed_events(num_events=6) -> list:
             "venue": "Suntec Convention Centre",
             "is_featured": True,
             "image_url": "https://media1.s-nbcnews.com/i/rockcms/2025-01/351270/250104-LeBron-James-ch-0953-26ecee_e08d57a40aaa073423abe1ed6d5e5988584a1a1e.jpg",
+            "capacity": 50,
+            "date": "2025-03-13T12:34:56.789123"
         },
         {
             "title": "Techno Music Festival",
@@ -181,6 +191,9 @@ def seed_events(num_events=6) -> list:
             "venue": "Berlin Arena",
             "is_featured": False,
             "image_url": "https://media1.s-nbcnews.com/i/rockcms/2025-01/351270/250104-LeBron-James-ch-0953-26ecee_e08d57a40aaa073423abe1ed6d5e5988584a1a1e.jpg",
+            "capacity": 20,
+            "date": "2025-03-13T12:34:56.789123"
+
         },
     ]
 
@@ -189,20 +202,15 @@ def seed_events(num_events=6) -> list:
     for i in range(num_events):
         base_event = SAMPLE_EVENTS[i % len(SAMPLE_EVENTS)].copy()
 
-        # Slightly randomize the event date and capacity
-        days_ahead = random.randint(10, 60)
-        base_event["date"] = (
-            datetime.utcnow() + timedelta(days=days_ahead)
-        ).isoformat()
-        base_event["capacity"] = random.randint(30, 50)
+       
 
         try:
             resp = requests.post(
-                f"{EVENTS_SERVICE_URL}/events", json=base_event, timeout=5
+                f"{EVENTS_SERVICE_URL}/events", json=base_event
             )
             resp.raise_for_status()
             data = resp.json()
-            event_id = data["id"]
+            event_id = data["event_id"]
             created_ids.append(event_id)
             print(
                 f"[Events] Created event ID {event_id} "
@@ -232,11 +240,11 @@ def reserve_and_purchase_some_seats(
         event_data = resp.json()
 
         # 🔍 Debugging log
-        # print(f"[DEBUG] Event Data for {event_id}: {event_data}")
+        #print(f"[DEBUG] Event Data for {event_id}: {event_data}")
 
         available_seats = event_data.get("seats", [])
         # 🔍 Debugging log for seats
-        # print(f"[DEBUG] Available seats for event {event_id}: {available_seats}")
+        #print(f"[DEBUG] Available seats for event {event_id}: {available_seats}")
     except Exception as e:
         print(f"[Tickets] Failed to get seats for event_id={event_id}: {e}")
         return
