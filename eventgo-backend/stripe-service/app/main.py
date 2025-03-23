@@ -300,17 +300,19 @@ async def create_split_payment(request: schemas.CreateSplitPaymentRequest):
             # Create metadata for this participant's payment
             metadata = {
                 "split_payment_id": split_payment_id,
+                "reservation_id": request.reservation_id,
                 "event_id": request.event_id,
-                "seats": ",".join(request.seats),
+                "ticket_id": participant.ticket_id,
                 "participant_email": participant.email,
-                "description": f"Your share of tickets for seats: {', '.join(request.seats)}"
+                "user_id": participant.user_id,
+                "description": f"Your ticket is {participant.ticket_id}"
             }
             
             # Generate payment link using the reusable function
             payment_link = await generate_payment_link(
                 amount=participant.amount,
                 currency=request.currency,
-                name=f"Split payment for {request.description} - {participant.name}",
+                name=f"Split payment for {request.description} - {participant.email}",
                 email=participant.email,
                 redirect_url=request.redirect_url,
                 metadata=metadata
@@ -335,7 +337,6 @@ async def create_split_payment(request: schemas.CreateSplitPaymentRequest):
             "payment_links": payment_links,
             "total_amount": total_amount,
             "event_id": request.event_id,
-            "seats": request.seats
         }
         
     except Exception as e:

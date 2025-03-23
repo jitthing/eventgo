@@ -23,10 +23,11 @@ class HealthResponse(BaseModel):
     stripe_configured: bool
 
 class PartyBookingRequestItem(BaseModel):
-    event_id: int
-    user_id: str
+    user_id: int
+    user_email: str
     ticket_id: int
+    price: int
 class PartyBookingRequest(BaseModel):
     items: List[PartyBookingRequestItem]
-    total_price: int
+    event_id: int
     reservation_id: int

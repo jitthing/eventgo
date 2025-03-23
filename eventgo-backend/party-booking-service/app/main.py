@@ -40,11 +40,11 @@ async def stripe_webhook(request: Request):
     
     try:
         # Log the payload and signature header for debugging
-        print(f"Payload length: {len(payload)}")
-        print(f"Signature Header present: {bool(sig_header)}")
+        # print(f"Payload length: {len(payload)}")
+        # print(f"Signature Header present: {bool(sig_header)}")
         
-        webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET")
-        print(f"Webhook secret (last 5 chars): {webhook_secret[-5:] if webhook_secret else 'None'}")
+        # webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET")
+        # print(f"Webhook secret (last 5 chars): {webhook_secret[-5:] if webhook_secret else 'None'}")
         
         # For development purposes - parse payload directly without verification
         # WARNING: In production, always verify signatures
@@ -56,17 +56,26 @@ async def stripe_webhook(request: Request):
         
         # Handle the event
         if event.type == "payment_intent.succeeded":
-            payment_intent = event.data.object
-            # Update your database to mark payment as complete
-            print(f"Payment for {payment_intent.metadata.get('event_id')} succeeded!")
+            try:
+                payment_intent = event.data.object
+                # Update your database to mark payment as complete
+                print(f"Payment for {payment_intent.metadata.get('event_id')} succeeded!")
+                return {"status": "ok"}
+            except Exception as e:
+                return {"status": "ok"}
+            
             
             # Here you would typically make an API call to your tickets service
             # to create the tickets now that payment is confirmed
             
         elif event.type == "payment_intent.payment_failed":
-            payment_intent = event.data.object
-            print(f"Payment for {payment_intent.metadata.get('event_id')} failed.")
-            # Release the held seats
+            try:
+                payment_intent = event.data.object
+                print(f"Payment for {payment_intent.metadata.get('event_id')} failed.")
+                # Release the held seats
+                return {"status": "ok"}
+            except Exception as e:
+                return {"status": "ok"}
             
         elif event.type == "checkout.session.completed":
             # Handle completed payments from payment links
@@ -81,29 +90,42 @@ async def stripe_webhook(request: Request):
                     # Extract the payment intent ID
                 payment_intent_id = session.payment_intent
                 participant_email = session.metadata.get("participant_email")
+                user_id = session.metadata.get("user_id")
+                reservation_id = session.metadata.get("reservation_id")
+                ticket_id = session.metadata.get("ticket_id")
+                print(f"Reservation ID is {reservation_id} and Ticket ID is {ticket_id} and belongs to {participant_email}")
                 print(f"Payment Intent ID: {payment_intent_id}")
                 # need to use this payment id to update ticket service for update, for future use for refund
                     
+                # to change one more field to include ticket id for one ticket reservation
                 ticket_confirm_req = {
-                    payment_intent: payment_intent_id
+                    "paymentIntentId": payment_intent_id,
+                    "reservationId": reservation_id,
+                    "userId": user_id
                 }
 
+                print(ticket_confirm_req)
+
                 try:
-                    confirm_ticket_endpoint = f"{TICKET_INVENTORY_URL}/confirm"
+                    confirm_ticket_endpoint = f"{TICKET_INVENTORY_URL}/tickets/confirm"
                     print(f"Calling ticket service at: {confirm_ticket_endpoint}")
-                    ticket_response = requests.post(
+                    ticket_response = requests.patch(
                         confirm_ticket_endpoint, 
                         json=ticket_confirm_req,
                         timeout=10)
                     
                     ticket_response_object = ticket_response.json()
+                    print(ticket_response_object)
 
                     # publish to queue
-                    return {"status": "success"}
+                    return ticket_response_object
                 except Exception as e:
                     print(f"Unexpected error: {str(e)}")
                     return {"status": "error", "message": f"Unexpected error: {str(e)}"}
-
+                
+        else:
+            print("Event type not covered")
+            return {"status": "ok"}
         
     except Exception as e:
         # Log the error details
@@ -173,34 +195,23 @@ async def party_booking(request: schemas.PartyBookingRequest):
     """
     # get links and email
     print(request.items)
+    reservation_id = request.reservation_id
+    event_id = request.event_id
+    leader = ""
     participants = []
-    to_split = request.total_price / len(request.items)
     for item in request.items:
-        participants.append({item.user_id, to_split})
+        if ";" in item.user_email:
+            leader = item.user_email[:-1]
+            participants.append({"email": leader, "user_id": item.user_id, "amount": item.price, "ticket_id": item.ticket_id})
+        else:
+            participants.append({"email": item.user_email, "user_id": item.user_id, "amount": item.price, "ticket_id": item.ticket_id})
     
     split_payments_req = {
-        "event_id": "event_12345",
-        "seats": ["B12", "B13", "B14"],
+        "event_id": event_id,
+        "reservation_id": reservation_id,
         "currency": "sgd",
-        "participants": 
-            [
-                {
-                    "email": "alice@example.com",
-                    "name": "Alice Smith",
-                    "amount": 3000
-                },
-                {
-                    "email": "bob@example.com",
-                    "name": "Bob Johnson",
-                    "amount": 3000
-                },
-                {
-                    "email": "charlie@example.com",
-                    "name": "Charlie Davis",
-                    "amount": 3000
-                }
-            ],
-        "description": "Concert Tickets for The Amazing Band",
+        "participants": participants,
+        "description": "test test test",
         "redirect_url": "http://localhost:3000"
         }
     try:
@@ -221,14 +232,19 @@ async def party_booking(request: schemas.PartyBookingRequest):
             
         payment_link_objects = payment_links_response.json()
         
-    
+        res = {}
         # Access the payment_links array correctly
         for payment_link_obj in payment_link_objects.get("payment_links", []):
-            print(f"{payment_link_obj.get('url')} belongs to {payment_link_obj.get('participant_email')}")
+            if payment_link_obj.get('participant_email') == leader:
+                res["redirect_url"] = payment_link_obj.get('url')
+            else:
+                # push to queue
+                print(f"{payment_link_obj.get('url')} belongs to {payment_link_obj.get('participant_email')}")
 
-        # publish to queue
+        # get leaders url and return, the rest push to queue
+        # publish to queue 
 
-        return {"status": "ok", "data": payment_link_objects}
+        return {"status": "ok", "data": res}
     except requests.exceptions.RequestException as e:
         print(f"Connection error: {str(e)}")
         return {"status": "error", "message": f"Connection to stripe service failed: {str(e)}"}

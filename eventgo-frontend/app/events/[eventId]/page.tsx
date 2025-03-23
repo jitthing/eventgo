@@ -288,11 +288,14 @@ function GroupBookingModal({
     const bookingInfo = selectedSeats.map((seatId) => {
       const assignee = seatAssignments[seatId];
       let assignedUserEmail;
+      let assignedUserId;
       if (assignee === "You") {
-        assignedUserEmail = user ? user.email : null;
+        assignedUserEmail = user ? user.email + ";" : null;
+        assignedUserId = user ? user.id : null;
       } else {
         const found = coBookers.find((co) => co.email === assignee);
         assignedUserEmail = found ? found.email : null;
+        assignedUserId = found ? found.id : null;
       }
 
       // Find the price of the selected seat
@@ -301,8 +304,8 @@ function GroupBookingModal({
       const seatNumber = seatNumbersMap[seatId];
 
       return {
-        event_id: eventId,
-        user_id: assignedUserEmail,
+        user_id: assignedUserId,
+        user_email: assignedUserEmail,
         ticket_id: seatId,
         price: price,
         seat_number: seatNumber,
@@ -332,10 +335,10 @@ function GroupBookingModal({
       const reservationId = reservationData.data.reservation_id;
       const send = {
         items: bookingInfo,
-        total_price: totalPrice,
+        event_id: eventId,
         reservation_id: reservationId,
       };
-
+      alert(JSON.stringify(send));
       try {
         const response = await fetch("http://localhost:8010/party-booking", {
           method: "POST",
@@ -343,15 +346,18 @@ function GroupBookingModal({
           body: JSON.stringify(send),
         });
 
+        const paymentResponse = await response.json();
+        const redirect = paymentResponse.data.redirect_url;
+
         if (response.ok) {
-          router.push(
-            `/confirmation?eventId=${eventId}&seats=${selectedSeats
+          window.location.href =
+            redirect +
+            `?/confirmation?eventId=${eventId}&seats=${selectedSeats
               .map((seatId) => {
                 const seat = availableSeats.find((s) => s.id === seatId);
                 return seat?.seat_number || "";
               })
-              .join(",")}&total=${totalPrice}`
-          );
+              .join(",")}&total=${totalPrice}`;
         }
       } catch (e) {
         console.error(e);

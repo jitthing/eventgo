@@ -58,13 +58,14 @@ class HealthResponse(BaseModel):
 # Split payment schemas
 class SplitPaymentParticipant(BaseModel):
     email: str
-    name: str
+    user_id: int
+    ticket_id: int
     amount: int
 
 class CreateSplitPaymentRequest(BaseModel):
-    event_id: str
-    seats: list[str]
+    event_id: int
     currency: str = "usd"
+    reservation_id: int
     participants: list[SplitPaymentParticipant]
     description: str
     redirect_url: str
@@ -87,8 +88,7 @@ class SplitPaymentResponse(BaseModel):
     split_payment_id: str
     payment_links: list[SplitPaymentLinkResponse]  # Use the specific schema for split payment links
     total_amount: int
-    event_id: str
-    seats: list[str]
+    event_id: int
 
 # class SplitPaymentStatusRequest(BaseModel):
 #     split_payment_id: str
