@@ -2,7 +2,7 @@ _format_version: "3.0"
 _transform: true
 
 consumers:
-  - user: user1
+  - username: user1
     jwt_secrets:
       - key: my-public-key
         secret: my-secret-key
