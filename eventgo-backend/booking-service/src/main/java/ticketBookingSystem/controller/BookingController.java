@@ -1,11 +1,13 @@
 package ticketBookingSystem.controller;
 
-import ticketBookingSystem.dto.Booking.InitiateBookingRequestDTO;
-import ticketBookingSystem.dto.Booking.InitiateBookingResponseDTO;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
+
+import ticketBookingSystem.dto.Booking.ProcessBookingRequestDTO;
+import ticketBookingSystem.dto.Booking.ProcessBookingResponseDTO;
 import ticketBookingSystem.service.BookingService;
 
 @Slf4j
@@ -21,15 +23,15 @@ public class BookingController {
         this.bookingService = bookingService;
     }
 
-    @PostMapping("/initiateBooking")
-    public ResponseEntity<InitiateBookingResponseDTO> initiateBooking(
-            @RequestBody InitiateBookingRequestDTO request
+    @PostMapping("/process-booking")
+    public ResponseEntity<ProcessBookingResponseDTO> processBooking(
+            @RequestBody ProcessBookingRequestDTO request
     ) {
         try {
-            InitiateBookingResponseDTO initiateBookingResponseDTO = bookingService.initiateBooking(request);
-            return ResponseEntity.ok(initiateBookingResponseDTO);
+            ProcessBookingResponseDTO processBookingResponseDTO = bookingService.processBooking(request);
+            return ResponseEntity.ok(processBookingResponseDTO);
         } catch (Exception e) {
-            InitiateBookingResponseDTO errorResponse = new InitiateBookingResponseDTO();
+            ProcessBookingResponseDTO errorResponse = new ProcessBookingResponseDTO();
             errorResponse.setStatus("FAILED");
             errorResponse.setErrorMessage("Booking Failed: " + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);

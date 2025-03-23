@@ -1,30 +1,62 @@
 package com.event_go.notification_service.service.impl;
 
-import com.twilio.rest.api.v2010.account.Message;
 import com.event_go.notification_service.model.NotificationEvent;
 import com.event_go.notification_service.service.NotificationService;
-import com.twilio.type.PhoneNumber;
+import jakarta.mail.*;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import java.util.Properties;
 
 @Service
 public class NotificationServiceImpl implements NotificationService {
 
-    @Value("${twilio.phone_number}")
-    private String twilioPhoneNumber;
+    @Value("${smtp.host}")
+    private String smtpHost;
+
+    @Value("${smtp.port}")
+    private int smtpPort;
+
+    @Value("${smtp.username}")
+    private String smtpUsername;
+
+    @Value("${smtp.password}")
+    private String smtpPassword;
+
+    @Value("${email.from}")
+    private String fromEmail;
 
     @Override
-    public void sendNotification(NotificationEvent notification) {
-        sendSMS(notification.getRecipientPhoneNumber(), notification.getMessage());
+    public void sendEmailNotification(NotificationEvent notification) {
+        sendEmail(notification.getRecipientEmailAddress(), notification.getMessage(), notification.getSubject());
     }
 
-    private void sendSMS(String recipientPhoneNumber, String messageBody) {
-        Message message = Message.creator(
-                new PhoneNumber(recipientPhoneNumber),
-                new PhoneNumber(twilioPhoneNumber),
-                messageBody
-        ).create();
+    private void sendEmail(String recipientEmailAddress, String messageBody, String subject) {
+        try {
+            Properties properties = new Properties();
+            properties.put("mail.smtp.auth", "true");
+            properties.put("mail.smtp.starttls.enable", "true");
+            properties.put("mail.smtp.host", smtpHost);
+            properties.put("mail.smtp.port", String.valueOf(smtpPort));
 
-        System.out.println("Message sent to " + recipientPhoneNumber);
+            Session session = Session.getInstance(properties, new Authenticator() {
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(smtpUsername, smtpPassword);
+                }
+            });
+
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(fromEmail));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmailAddress));
+            message.setSubject(subject);
+            message.setText(messageBody);
+
+            Transport.send(message);
+            System.out.println("✅ Email sent successfully to: " + recipientEmailAddress);
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send email: " + e.getMessage());
+        }
     }
 }

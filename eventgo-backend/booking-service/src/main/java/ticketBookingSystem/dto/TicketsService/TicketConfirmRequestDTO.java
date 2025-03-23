@@ -10,8 +10,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TicketConfirmRequestDTO {
-    private String eventId;
-    private List<String> seatsId;
+    // private String eventId;
+    // private List<String> seatsId;
     private String userId;
-    private String bookingId;
+
+    private String reservationId;
+    private String paymentIntentId;
 }

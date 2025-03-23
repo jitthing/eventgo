@@ -1,23 +1,43 @@
 package com.event_go.notification_service.service.impl;
 
-import com.event_go.notification_service.config.RabbitMQConfig;
-import com.event_go.notification_service.model.NotificationEvent;
-import com.event_go.notification_service.service.NotificationConsumer;
-import com.event_go.notification_service.service.NotificationService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+
+import com.event_go.notification_service.model.NotificationEvent;
+import ticketBookingSystem.dto.notification.NotificationDTO;
 
 @Component
-@RequiredArgsConstructor
-public class NotificationConsumerImpl implements NotificationConsumer {
+@Service
+public class NotificationConsumerImpl {
 
-    private final NotificationService notificationService;
+    private final NotificationServiceImpl notificationService;
 
-    @RabbitListener(queues = RabbitMQConfig.NOTIFICATION_QUEUE)
-    public void receiveNotification(NotificationEvent notification) {
-        System.out.println("Received notification: " + notification);
-        notificationService.sendNotification(notification);
+    public NotificationConsumerImpl(NotificationServiceImpl notificationService) {
+        this.notificationService = notificationService;
+    }
 
+    @RabbitListener(queues = "notification.queue")
+    public void receiveEmailNotification(NotificationDTO dto) {
+        try {
+            System.out.println("Received notification: " + dto);
+            
+            // Create a notification event from the DTO
+            NotificationEvent notification = new NotificationEvent();
+            notification.setMessage(dto.getMessage());
+            notification.setSubject(dto.getSubject());
+            notification.setRecipientEmailAddress(dto.getRecipientEmailAddress());
+            
+            // Process the notification
+            if (notification.getRecipientEmailAddress() != null && notification.getMessage() != null) {
+                notificationService.sendEmailNotification(notification);
+                System.out.println("Email notification sent to " + notification.getRecipientEmailAddress());
+            } else {
+                System.out.println("Skipping notification - missing required fields");
+            }
+        } catch (Exception e) {
+            System.err.println("Error processing notification: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

@@ -11,7 +11,6 @@ import java.util.List;
 @AllArgsConstructor
 public class TicketConfirmResponseDTO {
     private Boolean status;
-    private String bookingId;
     private String eventId;
     private List<String> seatsId;
 }

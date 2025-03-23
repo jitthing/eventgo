@@ -139,8 +139,13 @@ def seed_events() -> list:
             "venue": "Madison Square Garden",
             "is_featured": True,
             "image_url": "https://media1.s-nbcnews.com/i/rockcms/2025-01/351270/250104-LeBron-James-ch-0953-26ecee_e08d57a40aaa073423abe1ed6d5e5988584a1a1e.jpg",
+<<<<<<< HEAD
+            "capacity": 50,
+            "date": "2025-03-13T12:34:56.789123"
+=======
             "date": "2025-09-20T13:00:00.000000",
             "status": "Upcoming"
+>>>>>>> 7fe905523d60d6656219b9cb32dcde18fb384225
         },
         {
             "title": "Coldplay: Music of the Spheres Tour",
@@ -148,10 +153,16 @@ def seed_events() -> list:
             "category": "Concert",
             "venue": "Singapore National Stadium",
             "is_featured": True,
+<<<<<<< HEAD
+            "image_url": "https://media1.s-nbcnews.com/i/rockcms/2025-01/351270/250104-LeBron-James-ch-0953-26ecee_e08d57a40aaa073423abe1ed6d5e5988584a1a1e.jpg",
+            "capacity": 55,
+            "date": "2025-03-13T12:34:56.789123"
+=======
             "image_url": "https://tmw.com.sg/wp-content/uploads/2023/07/Coldplay-concert-in-Singapore-all-you-need-to-know.webp",
             "date": "2025-09-24T19:00:00.000000",
             "status": "Upcoming"
             
+>>>>>>> 7fe905523d60d6656219b9cb32dcde18fb384225
         },
         {
             "title": "TEDx Talks: Future of AI",
@@ -159,19 +170,34 @@ def seed_events() -> list:
             "category": "Conference",
             "venue": "MIT Auditorium",
             "is_featured": True,
+<<<<<<< HEAD
+            "image_url": "https://media1.s-nbcnews.com/i/rockcms/2025-01/351270/250104-LeBron-James-ch-0953-26ecee_e08d57a40aaa073423abe1ed6d5e5988584a1a1e.jpg",
+            "capacity": 60,
+            "date": "2025-03-13T12:34:56.789123"
+=======
             "image_url": "https://talkstar-photos.s3.amazonaws.com/uploads/5d36796c-8a8d-4832-9b27-5456113e06f4/JimVandehei_2021X-stageshot.jpg",
             "date": "2025-09-26T18:00:00.000000",
             "status": "Upcoming"
+>>>>>>> 7fe905523d60d6656219b9cb32dcde18fb384225
         },
         {
             "title": "Formula 1 Grand Prix: Singapore Night Race",
             "description": "Experience the thrill of Formula 1 under the Marina Bay lights.",
             "category": "Sports",
+<<<<<<< HEAD
+            "price": 300.0,
+            "venue": "Marina Bay Circuit",
+            "is_featured": False,
+            "image_url": "https://media1.s-nbcnews.com/i/rockcms/2025-01/351270/250104-LeBron-James-ch-0953-26ecee_e08d57a40aaa073423abe1ed6d5e5988584a1a1e.jpg",
+            "capacity": 150,
+            "date": "2025-03-13T12:34:56.789123"
+=======
             "venue": "Marina Bay Street Circuit",
             "is_featured": True,
             "image_url": "https://singaporegp.sg/media/2022/press-release/2022-first-wave-of-sgp-entertainment-line-up-walkabout-tickets.png",
             "date": "2025-09-26T18:00:00.000000",
             "status": "Upcoming"
+>>>>>>> 7fe905523d60d6656219b9cb32dcde18fb384225
         },
         {
             "title": "Anime Expo 2025",
@@ -179,9 +205,15 @@ def seed_events() -> list:
             "category": "Exhibition",
             "venue": "Suntec Convention Centre",
             "is_featured": True,
+<<<<<<< HEAD
+            "image_url": "https://media1.s-nbcnews.com/i/rockcms/2025-01/351270/250104-LeBron-James-ch-0953-26ecee_e08d57a40aaa073423abe1ed6d5e5988584a1a1e.jpg",
+            "capacity": 50,
+            "date": "2025-03-13T12:34:56.789123"
+=======
             "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzFe5vbnckSdpy1qr3o459Btd4b2mqP9xjCg&s",
             "date": "2025-09-26T12:00:00.000000",
             "status": "Upcoming"
+>>>>>>> 7fe905523d60d6656219b9cb32dcde18fb384225
         },
         {
             "title": "Techno Music Festival",
@@ -189,20 +221,48 @@ def seed_events() -> list:
             "category": "Concert",
             "venue": "Berlin Arena",
             "is_featured": False,
+<<<<<<< HEAD
+            "image_url": "https://media1.s-nbcnews.com/i/rockcms/2025-01/351270/250104-LeBron-James-ch-0953-26ecee_e08d57a40aaa073423abe1ed6d5e5988584a1a1e.jpg",
+            "capacity": 20,
+            "date": "2025-03-13T12:34:56.789123"
+=======
             "image_url": "https://images.ra.co/4f7482518a367caf2a12ceb719e7da4497663022.jpg",
             "date": "2025-11-11T23:00:00.000000",
             "status": "Upcoming"
+>>>>>>> 7fe905523d60d6656219b9cb32dcde18fb384225
 
         },
     ]
 
+<<<<<<< HEAD
+    created_ids = []
+    # We'll create exactly `num_events` events, cycling through SAMPLE_EVENTS
+    for i in range(num_events):
+        base_event = SAMPLE_EVENTS[i % len(SAMPLE_EVENTS)].copy()
+
+       
+=======
     created_event_ids = []
+>>>>>>> 7fe905523d60d6656219b9cb32dcde18fb384225
 
     # *** First clear existing events ***
     clear_events()
     
     for event in SAMPLE_EVENTS:
         try:
+<<<<<<< HEAD
+            resp = requests.post(
+                f"{EVENTS_SERVICE_URL}/events", json=base_event
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            event_id = data["event_id"]
+            created_ids.append(event_id)
+            print(
+                f"[Events] Created event ID {event_id} "
+                f"({base_event['title']}, capacity={base_event['capacity']})"
+            )
+=======
             resp = requests.post(f"{EVENTS_SERVICE_URL}/events/", json=event)
             resp.raise_for_status()
             data = resp.json()
@@ -210,6 +270,7 @@ def seed_events() -> list:
             event_id = data.get("event_id")
             created_event_ids.append(event_id)
             print(f"[Events] Created event ID {event_id} ({event['title']})")
+>>>>>>> 7fe905523d60d6656219b9cb32dcde18fb384225
         except Exception as err:
             print(f"Failed to create event {event['title']}: {err}")
 
@@ -233,6 +294,17 @@ def generate_tickets(event_id, min_seats=10, max_seats=30):
     
     print(f"[Tickets] Generating {seat_count} tickets for Event ID {event_id} with VIP: ${vip_price}, Standard: ${standard_price}...")
 
+<<<<<<< HEAD
+        # 🔍 Debugging log
+        #print(f"[DEBUG] Event Data for {event_id}: {event_data}")
+
+        available_seats = event_data.get("seats", [])
+        # 🔍 Debugging log for seats
+        #print(f"[DEBUG] Available seats for event {event_id}: {available_seats}")
+    except Exception as e:
+        print(f"[Tickets] Failed to get seats for event_id={event_id}: {e}")
+        return
+=======
     for i in range(1, seat_count + 1):
         seat_category = "VIP" if i <= vip_threshold else "standard"
         seat_number = f"{chr(65 + (i - 1) // 10)}{(i - 1) % 10 + 1}"
@@ -245,6 +317,7 @@ def generate_tickets(event_id, min_seats=10, max_seats=30):
             "status": ticket_status,
             "price": vip_price if seat_category == "VIP" else standard_price
         }
+>>>>>>> 7fe905523d60d6656219b9cb32dcde18fb384225
 
         # Assign a random user_id (either 2, 3, or 4) to sold tickets
         if ticket_status == "sold":
