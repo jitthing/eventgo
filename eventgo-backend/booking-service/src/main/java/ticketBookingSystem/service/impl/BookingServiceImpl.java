@@ -1,21 +1,20 @@
 package ticketBookingSystem.service.impl;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 import ticketBookingSystem.dto.Booking.ProcessBookingRequestDTO;
 import ticketBookingSystem.dto.Booking.ProcessBookingResponseDTO;
+import ticketBookingSystem.dto.notification.NotificationDTO;
 import ticketBookingSystem.service.BookingService;
+import ticketBookingSystem.service.NotificationProducer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Date;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -27,7 +26,13 @@ public class BookingServiceImpl implements BookingService {
     @Value("${stripe.service.url}")
     private String stripeServiceUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final WebClient webClient;
+    private final NotificationProducer notificationProducer;
+
+    public BookingServiceImpl(NotificationProducer notificationProducer) {
+        this.webClient = WebClient.builder().build();
+        this.notificationProducer = notificationProducer;
+    }
 
     public ProcessBookingResponseDTO processBooking(ProcessBookingRequestDTO request) {
         String eventId = request.getEventId();
@@ -55,6 +60,9 @@ public class BookingServiceImpl implements BookingService {
                 return response;
             }
 
+            // 3. Send confirmation email
+            sendBookingConfirmationEmail(request);
+
             response.setStatus("SUCCESS");
             response.setConfirmationMessage("Booking confirmed for event " + eventId + " with payment ID " + paymentIntentId);
             
@@ -67,17 +75,73 @@ public class BookingServiceImpl implements BookingService {
         return response;
     }
 
+    private void sendBookingConfirmationEmail(ProcessBookingRequestDTO request) {
+        try {
+            log.info("Starting to prepare email notification for booking: eventId={}, seats={}", 
+                    request.getEventId(), request.getSeats());
+
+            NotificationDTO notification = new NotificationDTO();
+            notification.setNotificationId(UUID.randomUUID());
+            notification.setTimestamp(new Date());
+            notification.setSubject("Booking Confirmation - Event " + request.getEventId());
+            
+            // Create a detailed message
+            String message = String.format(
+                "Thank you for your booking!\n\n" +
+                "Booking Details:\n" +
+                "Event ID: %s\n" +
+                "Seats: %s\n" +
+                "Payment ID: %s\n\n" +
+                "Your tickets have been confirmed. Enjoy the event!",
+                request.getEventId(),
+                String.join(", ", request.getSeats()),
+                request.getPaymentIntentId()
+            );
+            
+            notification.setMessage(message);
+            
+            // For testing, using a hardcoded email
+            String userEmail = "taneeherng@gmail.com";
+            notification.setRecipientEmailAddress(userEmail);
+            
+            log.info("Attempting to send notification through RabbitMQ. Email: {}, Subject: {}", 
+                    userEmail, notification.getSubject());
+            
+            notificationProducer.sendNotification(notification);
+            log.info("Successfully published notification to RabbitMQ queue");
+            
+        } catch (Exception e) {
+            log.error("Failed to send booking confirmation email. Error details: ", e);
+            // Don't throw the exception - we don't want to fail the booking if email fails
+        }
+    }
+
+    private String getUserEmail(String userId) {
+        try {
+            // Call auth service to get user details
+            Map response = webClient.get()
+                .uri("http://auth-service:8001/users/" + userId)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+            
+            if (response != null && response.containsKey("email")) {
+                return (String) response.get("email");
+            }
+            throw new RuntimeException("Email not found for user: " + userId);
+        } catch (Exception e) {
+            log.error("Error fetching user email: {}", e.getMessage());
+            throw new RuntimeException("Failed to get user email: " + e.getMessage());
+        }
+    }
+
     private boolean validatePayment(String paymentIntentId, String eventId, java.util.List<String> seats) {
         String url = stripeServiceUrl + "/validate-payment";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("payment_intent_id", paymentIntentId);
         requestBody.put("event_id", eventId);
         requestBody.put("seats", seats);
-
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
         try {
             // For testing, skip validation if using test payment intent
@@ -87,7 +151,14 @@ public class BookingServiceImpl implements BookingService {
             }
             
             log.info("Calling Stripe validation service at {}", url);
-            Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
+            Map response = webClient.post()
+                .uri(url)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+                
             log.info("Payment validation response: {}", response);
             
             if (response != null && response.containsKey("valid") && (Boolean) response.get("valid")) {
@@ -108,9 +179,6 @@ public class BookingServiceImpl implements BookingService {
     private boolean confirmSeat(ProcessBookingRequestDTO request) {
         String url = ticketsInventoryUrl + "/tickets/confirm";
         log.info("Confirming seat at URL: {}", url);
-        
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
 
         Map<String, Object> requestBody = new HashMap<>();
         
@@ -125,28 +193,23 @@ public class BookingServiceImpl implements BookingService {
         requestBody.put("userId", request.getUserId());
         requestBody.put("paymentIntentId", request.getPaymentIntentId());
 
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-
         try {
-            // Using PATCH method to match the TicketController endpoint
             log.info("Sending PATCH request to confirm tickets: {}", requestBody);
-            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-                url, 
-                HttpMethod.PATCH,  // Using PATCH to match the TicketController endpoint
-                entity, 
-                new ParameterizedTypeReference<Map<String, Object>>() {}
-            );
+            Map response = webClient.patch()
+                .uri(url)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
             
-            log.info("Received response: status={}, body={}", response.getStatusCode(), response.getBody());
+            log.info("Received response: body={}", response);
             
-            if (response.getStatusCode().is2xxSuccessful()) {
-                Map<String, Object> responseBody = response.getBody();
-                if (responseBody != null && "success".equals(responseBody.get("status"))) {
-                    log.info("Seat confirmation successful");
-                    return true;
-                }
+            if (response != null && "success".equals(response.get("status"))) {
+                log.info("Seat confirmation successful");
+                return true;
             }
-            log.warn("Seat confirmation failed with status: {}", response.getStatusCode());
+            log.warn("Seat confirmation failed");
             return false;
         } catch (Exception e) {
             log.error("Error confirming seat: {}", e.getMessage(), e);

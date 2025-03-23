@@ -4,16 +4,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import java.io.Serializable;
-import java.util.Date;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class NotificationDTO implements Serializable {
-    private UUID notificationId;
-    private Date timestamp;
+public class NotificationEvent implements Serializable {
     private String message;
     private String subject;
     private String recipientEmailAddress;
-}
+} 

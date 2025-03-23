@@ -1,12 +1,11 @@
 package ticketBookingSystem.service;
 
 import org.springframework.stereotype.Service;
-
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import lombok.extern.slf4j.Slf4j;
 import ticketBookingSystem.dto.notification.NotificationDTO;
 
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-
-
+@Slf4j
 @Service
 public class NotificationProducer {
     
@@ -18,7 +17,18 @@ public class NotificationProducer {
     }
 
     public void sendNotification(NotificationDTO notification) {
-        rabbitTemplate.convertAndSend(NOTIFICATION_QUEUE, notification);
-        System.out.println("Sent notification: " + notification);
+        try {
+            log.info("Attempting to send notification to queue: {}", NOTIFICATION_QUEUE);
+            log.debug("Notification details - Subject: {}, Recipient: {}", 
+                    notification.getSubject(), 
+                    notification.getRecipientEmailAddress());
+            
+            rabbitTemplate.convertAndSend(NOTIFICATION_QUEUE, notification);
+            
+            log.info("Successfully sent notification to queue: {}", NOTIFICATION_QUEUE);
+        } catch (Exception e) {
+            log.error("Failed to send notification to queue: {}. Error: ", NOTIFICATION_QUEUE, e);
+            throw e; // Re-throw to be handled by caller
+        }
     }
 }

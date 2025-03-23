@@ -6,7 +6,9 @@ import org.springframework.stereotype.Service;
 
 import com.event_go.notification_service.model.NotificationEvent;
 import ticketBookingSystem.dto.notification.NotificationDTO;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 @Service
 public class NotificationConsumerImpl {
@@ -20,7 +22,7 @@ public class NotificationConsumerImpl {
     @RabbitListener(queues = "notification.queue")
     public void receiveEmailNotification(NotificationDTO dto) {
         try {
-            System.out.println("Received notification: " + dto);
+            log.info("Received notification: subject={}, recipient={}", dto.getSubject(), dto.getRecipientEmailAddress());
             
             // Create a notification event from the DTO
             NotificationEvent notification = new NotificationEvent();
@@ -31,13 +33,12 @@ public class NotificationConsumerImpl {
             // Process the notification
             if (notification.getRecipientEmailAddress() != null && notification.getMessage() != null) {
                 notificationService.sendEmailNotification(notification);
-                System.out.println("Email notification sent to " + notification.getRecipientEmailAddress());
+                log.info("Email notification sent to {}", notification.getRecipientEmailAddress());
             } else {
-                System.out.println("Skipping notification - missing required fields");
+                log.warn("Skipping notification - missing required fields");
             }
         } catch (Exception e) {
-            System.err.println("Error processing notification: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error processing notification: {}", e.getMessage(), e);
         }
     }
 }

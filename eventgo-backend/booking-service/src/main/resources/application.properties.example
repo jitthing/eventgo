@@ -1,0 +1,12 @@
+server.port=8000
+
+# Service URLs (read from environment variables)
+tickets.inventory.url=${TICKETS_INVENTORY_URL}
+stripe.service.url=${STRIPE_SERVICE_URL}
+auth.service.url=${AUTH_SERVICE_URL}
+
+# RabbitMQ Configuration
+spring.rabbitmq.host=${SPRING_RABBITMQ_HOST}
+spring.rabbitmq.port=${SPRING_RABBITMQ_PORT}
+spring.rabbitmq.username=${SPRING_RABBITMQ_USERNAME}
+spring.rabbitmq.password=${SPRING_RABBITMQ_PASSWORD}
