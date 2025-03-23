@@ -13,8 +13,6 @@ spring.jpa.show-sql=true
 
 # Server Configuration
 server.port=8080
-<<<<<<< HEAD
-=======
 
 # Expose health endpoint
 management.endpoints.web.exposure.include=health
@@ -37,4 +35,3 @@ spring.web.cors.allowed-origins=http://localhost:3000
 spring.web.cors.allowed-methods=GET,POST,PUT,PATCH,DELETE,OPTIONS
 spring.web.cors.allowed-headers=*
 spring.web.cors.allow-credentials=true
->>>>>>> 7fe905523d60d6656219b9cb32dcde18fb384225

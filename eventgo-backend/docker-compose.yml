@@ -32,90 +32,6 @@ services:
       - "5432:5432"
     networks:
       - app_network
-<<<<<<< HEAD
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  # --------------------------------------------------------------------------
-  # EVENTS SERVICE
-  # --------------------------------------------------------------------------
-  events-service:
-    container_name: events-service
-    build: ./events-service
-    ports:
-      - "8002:8000"
-    env_file:
-      - ./events-service/.env
-    depends_on:
-      events-db:
-        condition: service_healthy
-    networks:
-      - app_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    restart: always
-
-  events-db:
-    container_name: events-db
-    image: postgres:14-alpine
-    env_file:
-      - ./events-service/.env
-    volumes:
-      - events-db-data:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
-    networks:
-      - app_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  # --------------------------------------------------------------------------
-  # TICKETS SERVICE - phased out
-  # --------------------------------------------------------------------------
-  tickets-service:
-    container_name: tickets-service
-    build: ./tickets-service
-    ports:
-      - "8003:8000"
-      
-    env_file:
-      - ./tickets-service/.env
-    depends_on:
-      tickets-db:
-        condition: service_healthy
-      events-service:
-        condition: service_healthy
-    networks:
-      - app_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    restart: always
-
-  tickets-db:
-    container_name: tickets-db
-    image: postgres:14-alpine
-    env_file:
-      - ./tickets-service/.env
-    volumes:
-      - tickets-db-data:/var/lib/postgresql/data
-    ports:
-      - "5434:5432"
-    networks:
-      - app_network
-=======
->>>>>>> 7fe905523d60d6656219b9cb32dcde18fb384225
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -131,126 +47,8 @@ services:
       - "8004:8000"
     env_file:
       - ./stripe-service/.env
-<<<<<<< HEAD
-    volumes:
-      - ./stripe-service:/app
-    networks:
-      - app_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-
-  # --------------------------------------------------------------------------
-  # TICKET INVENTORY SERVICE (Spring Boot + MySQL)
-  # --------------------------------------------------------------------------
-  ticket-inventory:
-    container_name: ticket-inventory
-    build: ./ticket-inventory
-    ports:
-      - "8005:8080"
-    # depends_on:
-    #   ticket-inventory-db:
-    #     condition: service_healthy
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://ticket-inventory-db:3306/ticket_inventory
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: password
-    restart: always
-    networks:
-      - app_network
-
-  ticket-inventory-db:
-    container_name: ticket-inventory-db
-    image: mysql:8
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: ticket_inventory
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-    ports:
-      - "3307:3306"
-    volumes:
-      - ticket-inventory-data:/var/lib/mysql
-    networks:
-      - app_network
-
-  # --------------------------------------------------------------------------
-  # NOTIFICATION SERVICE
-  # --------------------------------------------------------------------------
-  notification-service:
-    build: ./notification-service
-    ports:
-      - "8006:8000"
-    # env_file:
-      # - ./notification-service/.env
-    environment:
-      - TWILIO_ACCOUNT_SID=AC9f7642aae661930ba3e269d802267866
-      - TWILIO_AUTH_TOKEN=a9f19bd06b53de084a68e0887bc93f20
-      - TWILIO_PHONE_NUMBER=+18066212678
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
-      - RABBITMQ_DEFAULT_USER=rabbitmqusername
-      - RABBITMQ_DEFAULT_PASS=rabbitmqpassword
-    volumes:
-      - ./notification-service:/src
-    depends_on:
-      - rabbitmq
-    networks:
-      - app_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    restart: always
-    ports:
-      - "5672:5672"  # RabbitMQ default communication port
-      - "15672:15672" # RabbitMQ Management UI
-    # env_file:
-      # - ./notification-service/.env
-    environment:
-    #   - spring.rabbitmq.host=rabbitmq
-    #   - spring.rabbitmq.port=5672
-      - RABBITMQ_DEFAULT_USER=rabbitmqusername
-      - RABBITMQ_DEFAULT_PASS=rabbitmqpassword
-    networks:
-      - app_network
-
-  # --------------------------------------------------------------------------
-  # BOOKING SERVICE
-  # --------------------------------------------------------------------------
-  booking-service:
-    build: ./booking-service
-    ports:
-      - "8007:8000"
-    # env_file:
-    #   - ./booking-service/.env
-    environment:
-      - springdoc.swagger-ui.path=/docs
-      - server.port=8000
-      - TICKETS_SERVICE_URL=http://tickets-service:8000
-      - STRIPE_SERVICE_URL=http://stripe-service:8000
-      - AUTH_SERVICE_URL=http://auth-service:8000
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
-      - RABBITMQ_DEFAULT_USER=rabbitmqusername
-      - RABBITMQ_DEFAULT_PASS=rabbitmqpassword
-
-    volumes:
-      - ./booking-service:/src
-=======
     # volumes:
     #   - ./stripe-service:/app
->>>>>>> 7fe905523d60d6656219b9cb32dcde18fb384225
     networks:
       - app_network
     healthcheck:
@@ -325,8 +123,8 @@ services:
     build: ./notification-service
     ports:
       - "8006:8000"
-    # env_file:
-    # - ./notification-service/.env
+    env_file:
+    - ./notification-service/.env
     environment:
       - TWILIO_ACCOUNT_SID=AC9f7642aae661930ba3e269d802267866
       - TWILIO_AUTH_TOKEN=a9f19bd06b53de084a68e0887bc93f20
@@ -354,8 +152,8 @@ services:
     ports:
       - "5672:5672" # RabbitMQ default communication port
       - "15672:15672" # RabbitMQ Management UI
-    # env_file:
-    # - ./notification-service/.env
+    env_file:
+    - ./notification-service/.env
     environment:
       #   - spring.rabbitmq.host=rabbitmq
       #   - spring.rabbitmq.port=5672
@@ -415,16 +213,6 @@ volumes:
   tickets-db-data:
   ticket-inventory-data:
 
-<<<<<<< HEAD
-
 networks:
   app_network:
     driver: bridge
-  
-
-
-=======
-networks:
-  app_network:
-    driver: bridge
->>>>>>> 7fe905523d60d6656219b9cb32dcde18fb384225
