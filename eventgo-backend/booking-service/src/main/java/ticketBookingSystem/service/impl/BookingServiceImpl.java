@@ -38,8 +38,8 @@ public class BookingServiceImpl implements BookingService {
         String eventId = request.getEventId();
         String paymentIntentId = request.getPaymentIntentId();
         
-        log.info("Processing booking for event: {}, payment: {}, seats: {}", 
-                eventId, paymentIntentId, request.getSeats());
+        log.info("Processing booking for event: {}, payment: {}, seats: {}, userEmail: {}", 
+                eventId, paymentIntentId, request.getSeats(), request.getUserEmail());
 
         ProcessBookingResponseDTO response = new ProcessBookingResponseDTO();
         
@@ -77,8 +77,8 @@ public class BookingServiceImpl implements BookingService {
 
     private void sendBookingConfirmationEmail(ProcessBookingRequestDTO request) {
         try {
-            log.info("Starting to prepare email notification for booking: eventId={}, seats={}", 
-                    request.getEventId(), request.getSeats());
+            log.info("Starting to prepare email notification for booking: eventId={}, seats={}, userEmail={}", 
+                    request.getEventId(), request.getSeats(), request.getUserEmail());
 
             NotificationDTO notification = new NotificationDTO();
             notification.setNotificationId(UUID.randomUUID());
@@ -100,12 +100,26 @@ public class BookingServiceImpl implements BookingService {
             
             notification.setMessage(message);
             
-            // For testing, using a hardcoded email
-            String userEmail = "taneeherng@gmail.com";
+            // Get user email from request or use fallback
+            String userEmail = request.getUserEmail();
+            log.info("User email from request: {}", userEmail);
+            
+            if (userEmail == null || userEmail.isEmpty()) {
+                // Fall back to getting email from auth service if not provided
+                log.info("Email from request is null or empty, trying to get from auth service with userId: {}", request.getUserId());
+                userEmail = getUserEmail(request.getUserId());
+                log.info("Email returned from auth service: {}", userEmail);
+                
+                // If still null, use default for testing
+                if (userEmail == null || userEmail.isEmpty()) {
+                    userEmail = "taneeherng@gmail.com"; // Default for testing
+                    log.warn("Using default email for testing: {}", userEmail);
+                }
+            }
+            
             notification.setRecipientEmailAddress(userEmail);
             
-            log.info("Attempting to send notification through RabbitMQ. Email: {}, Subject: {}", 
-                    userEmail, notification.getSubject());
+            log.info("Sending booking confirmation email to: {}", userEmail);
             
             notificationProducer.sendNotification(notification);
             log.info("Successfully published notification to RabbitMQ queue");
@@ -118,6 +132,13 @@ public class BookingServiceImpl implements BookingService {
 
     private String getUserEmail(String userId) {
         try {
+            if (userId == null || userId.isEmpty()) {
+                log.warn("No userId provided for email lookup");
+                return null;
+            }
+            
+            log.info("Fetching user email for userId: {}", userId);
+            
             // Call auth service to get user details
             Map response = webClient.get()
                 .uri("http://auth-service:8001/users/" + userId)
@@ -126,12 +147,16 @@ public class BookingServiceImpl implements BookingService {
                 .block();
             
             if (response != null && response.containsKey("email")) {
-                return (String) response.get("email");
+                String email = (String) response.get("email");
+                log.info("Retrieved email {} for userId {}", email, userId);
+                return email;
             }
-            throw new RuntimeException("Email not found for user: " + userId);
+            
+            log.warn("Email not found for user: {}", userId);
+            return null;
         } catch (Exception e) {
-            log.error("Error fetching user email: {}", e.getMessage());
-            throw new RuntimeException("Failed to get user email: " + e.getMessage());
+            log.error("Error fetching user email: {}", e.getMessage(), e);
+            return null; // Return null instead of throwing exception
         }
     }
 
