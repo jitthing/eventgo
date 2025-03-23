@@ -31,4 +31,3 @@ email.from=eventgo.esd@gmail.com
 twilio.accountSid=${TWILIO_ACCOUNT_SID:defaultAccountSid}
 twilio.authToken=${TWILIO_AUTH_TOKEN:defaultAuthToken}
 twilio.phoneNumber=${TWILIO_PHONE_NUMBER:+18066212678}
-

@@ -158,6 +158,12 @@ function PaymentForm({ eventId, seats, total, reservationId, userId, onSuccess }
           throw new Error(errorData.errorMessage || "Failed to process booking");
         }
 
+        // Check that the booking was successful
+        const bookingResult = await processBookingResponse.json();
+        if (bookingResult.status !== "SUCCESS") {
+          throw new Error(bookingResult.confirmationMessage || "Booking processing failed");
+        }
+
         // Clear localStorage after successful processing
         localStorage.removeItem("reservationId");
         localStorage.removeItem("userId");
