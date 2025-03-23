@@ -1,0 +1,125 @@
+_format_version: "3.0"
+_transform: true
+
+consumers:
+  - user: user1
+    jwt_secrets:
+      - key: my-public-key
+        secret: my-secret-key
+        algorithm: HS256
+
+services:
+  - name: auth-service
+    url: http://host.docker.internal:8001
+    routes:
+      - name: auth-route
+        paths:
+          - /auth
+        strip_path: true
+
+  - name: notification-service
+    url: http://host.docker.internal:8006
+    routes:
+      - name: notification-route
+        paths:
+          - /notifs
+        strip_path: true
+
+  - name: ticket-inventory-service
+    url: http://host.docker.internal:8005
+    routes:
+      - name: tickets-route
+        paths:
+          - /tickets
+        strip_path: true
+
+  - name: booking-service
+    url: http://host.docker.internal:8007
+    routes:
+      - name: booking-route
+        paths:
+          - /bookings
+        strip_path: true
+        plugins:
+          - name: rate-limiting
+            config:
+              second: 1
+              minute: 5
+              policy: local
+          - name: jwt
+          - name: cors
+            config:
+              origins:
+                - http://localhost:3000
+              methods:
+                - GET
+                - POST
+                - OPTIONS
+              headers:
+                - Authorization
+                - Content-Type
+              credentials: true
+
+      - name: booking-get-token
+        paths:
+          - /bookings/get-token
+        strip_path: false
+        methods:
+          - POST
+
+  
+  - name: stripe-service
+    url: http://host.docker.internal:8004
+    routes:
+      - name: stripe-protected-route
+        paths:
+          - /create-payment-intent
+        strip_path: false
+        plugins:
+          - name: jwt
+          - name: cors
+            config:
+              origins:
+                - http://localhost:3000
+              methods:
+                - GET
+                - POST
+                - OPTIONS
+              headers:
+                - Authorization
+                - Content-Type
+              credentials: true
+      - name: stripe-get-token
+        paths:
+          - /get-token
+        strip_path: false
+        methods:
+          - POST
+        plugins:
+        - name: cors
+          config:
+            origins:
+              - http://localhost:3000   # Make sure this matches your frontend URL
+            methods:
+              - POST
+            headers:
+              - Content-Type
+            credentials: true
+
+      
+
+  - name: party-booking-service
+    url: http://host.docker.internal:8010
+    routes:
+      - name: split-booking-route
+        paths:
+          - /split
+        strip_path: true
+
+  - name: events-service
+    url: https://personal-vyyhsf3d.outsystemscloud.com/EventsOutsystem/rest/EventsAPI
+    routes:
+      - name: events-route
+        paths:
+          - /events
+        strip_path: true
