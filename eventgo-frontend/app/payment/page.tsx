@@ -17,11 +17,13 @@ interface PaymentFormProps {
   eventId: string | null;
   seats: string | null;
   total: string | null;
+  reservationId: string | null;  // Add reservationId
+  userId: string | null;         // Add userId
   onSuccess: () => void;
 }
 
 // Create a PaymentForm component that uses Stripe
-function PaymentForm({ eventId, seats, total, onSuccess }: PaymentFormProps) {
+function PaymentForm({ eventId, seats, total, reservationId, userId, onSuccess }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState<boolean>(false);
@@ -112,7 +114,7 @@ function PaymentForm({ eventId, seats, total, onSuccess }: PaymentFormProps) {
       }
 
       if (paymentIntent?.status === "succeeded") {
-        // Call confirm-booking endpoint to finalize the booking
+        // First call confirm-booking endpoint in Stripe service
         const confirmResponse = await fetch(
           `${
             process.env.NEXT_PUBLIC_PAYMENTS_API_URL || "http://localhost:8004"
@@ -130,9 +132,36 @@ function PaymentForm({ eventId, seats, total, onSuccess }: PaymentFormProps) {
 
         if (!confirmResponse.ok) {
           const errorData = await confirmResponse.json();
-          throw new Error(errorData.detail || "Failed to confirm booking");
+          throw new Error(errorData.detail || "Failed to confirm payment");
+        }
+        
+        // Then call process-booking endpoint in Booking service
+        const processBookingResponse = await fetch(
+          `${
+            process.env.NEXT_PUBLIC_BOOKING_SERVICE_API_URL || "http://localhost:8007"
+          }/bookings/process-booking`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              eventId: eventId,
+              seats: seats?.split(","),
+              paymentIntentId: paymentIntent.id,
+              reservationId: reservationId, // Add reservationId
+              userId: userId               // Add userId
+            }),
+          }
+        );
+
+        if (!processBookingResponse.ok) {
+          const errorData = await processBookingResponse.json();
+          throw new Error(errorData.errorMessage || "Failed to process booking");
         }
 
+        // Clear localStorage after successful processing
+        localStorage.removeItem("reservationId");
+        localStorage.removeItem("userId");
+        
         // Pass the payment intent ID to the success handler
         onSuccess();
       } else {
@@ -195,11 +224,32 @@ function PaymentForm({ eventId, seats, total, onSuccess }: PaymentFormProps) {
 export default function PaymentPage(): JSX.Element {
   const searchParams = useSearchParams();
   const router = useRouter();
-
+  
   const eventId = searchParams.get("eventId");
   const seats = searchParams.get("seats");
   const total = searchParams.get("total");
+  // Get reservationId from URL params or localStorage
+  const [reservationId, setReservationId] = useState<string | null>(
+    searchParams.get("reservationId") || null
+  );
+  const [userId, setUserId] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
+
+  useEffect(() => {
+    // If reservationId wasn't in URL, try to get from localStorage
+    if (!reservationId) {
+      const storedReservationId = localStorage.getItem("reservationId");
+      if (storedReservationId) {
+        setReservationId(storedReservationId);
+      }
+    }
+    
+    // Get userId from localStorage
+    const storedUserId = localStorage.getItem("userId");
+    if (storedUserId) {
+      setUserId(storedUserId);
+    }
+  }, [reservationId]);
 
   // Handle successful payment
   const handlePaymentSuccess = (): void => {
@@ -258,6 +308,8 @@ export default function PaymentPage(): JSX.Element {
                 eventId={eventId}
                 seats={seats}
                 total={total}
+                reservationId={reservationId}  // Pass reservationId
+                userId={userId}                 // Pass userId
                 onSuccess={handlePaymentSuccess}
               />
             </Elements>

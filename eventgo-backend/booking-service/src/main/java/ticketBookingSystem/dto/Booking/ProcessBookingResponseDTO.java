@@ -10,4 +10,5 @@ import lombok.*;
 public class ProcessBookingResponseDTO {
     private String status;
     private String errorMessage;
+    private String confirmationMessage;
 }

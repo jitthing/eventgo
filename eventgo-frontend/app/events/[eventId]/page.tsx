@@ -23,6 +23,7 @@ export default function EventPage() {
   const [totalPrice, setTotalPrice] = useState(0);
   const [isGroupBookingOpen, setIsGroupBookingOpen] = useState(false);
   const [availableSeats, setAvailableSeats] = useState<any[]>([]);
+  const [reservationId, setReservationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isNaN(eventId)) {
@@ -137,18 +138,45 @@ export default function EventPage() {
 
           <div className="mt-6 space-y-3">
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (user) {
-                  router.push(
-                    `/payment?eventId=${eventId}&seats=${selectedSeats
-                      .map((seatId) => {
-                        const seat = availableSeats.find(
-                          (s) => s.id === seatId
-                        );
+                  try {
+                    // First, make the reservation
+                    const ticketBody = {
+                      eventId: eventId,
+                      userId: user.id,
+                      seats: selectedSeats.map((id) => {
+                        const seat = availableSeats.find((s) => s.id === id);
                         return seat?.seat_number || "";
-                      })
-                      .join(",")}&total=${totalPrice}`
-                  );
+                      }),
+                    };
+                    
+                    const ticketReservation = await fetch("http://localhost:8005/tickets/reserve", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(ticketBody),
+                    });
+
+                    const reservationData = await ticketReservation.json();
+                    const reservationId = reservationData.data.reservation_id;
+                    
+                    // Save reservationId to localStorage for access in payment page
+                    localStorage.setItem("reservationId", reservationId);
+                    localStorage.setItem("userId", user.id.toString());
+                    
+                    // Navigate to payment page with all necessary params
+                    router.push(
+                      `/payment?eventId=${eventId}&seats=${selectedSeats
+                        .map((seatId) => {
+                          const seat = availableSeats.find(s => s.id === seatId);
+                          return seat?.seat_number || "";
+                        })
+                        .join(",")}&total=${totalPrice}&reservationId=${reservationId}`
+                    );
+                  } catch (error) {
+                    console.error("Error making reservation:", error);
+                    alert("Failed to reserve seats. Please try again.");
+                  }
                 } else {
                   router.push("/login");
                 }

@@ -43,12 +43,12 @@ public class BookingController {
         return bookingService.test();
     }
 
-    @GetMapping("/status")
-    public ResponseEntity<String> getStatus() {
-        // You can add more logic here as needed.
-        log.info("Status endpoint called.");
-        return ResponseEntity.ok("Booking Service is running");
-    }
+    // @GetMapping("/status")
+    // public ResponseEntity<String> getStatus() {
+    //     // You can add more logic here as needed.
+    //     log.info("Status endpoint called.");
+    //     return ResponseEntity.ok("Booking Service is running");
+    // }
 
 
 
