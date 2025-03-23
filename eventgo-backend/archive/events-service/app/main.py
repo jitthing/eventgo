@@ -40,17 +40,25 @@ async def health_check(db: Session = Depends(get_db)):
 async def list_events(is_featured: bool = False, db: Session = Depends(get_db)):
     """Retrieve all events or only featured ones based on query parameter."""
     query = db.query(models.Event)
+    """
     if is_featured:
         query = query.filter(models.Event.is_featured == True)
-    events = query.options(joinedload(models.Event.seats)).all()
+    #events = query.options(joinedload(models.Event.seats)).all()
+    query = db.query(models.Event)
+    """
+    if is_featured:
+        query = query.filter(models.Event.is_featured == True)
+
+    events = query.all()  # Removed joinedload(models.Event.seats)
     return events
+    
 
 
 # 🎟 Get event details of specific event
 @app.get("/events/{event_id}", response_model=schemas.EventResponse)
 async def get_event(event_id: int, db: Session = Depends(get_db)):
     """Retrieve event details including available seats."""
-    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    event = db.query(models.Event).filter(models.Event.event_id == event_id).first()
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
 
@@ -66,7 +74,7 @@ async def create_event(event: schemas.EventCreate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(db_event)
 
-    # Generate seats
+    """### Generate seats
     seats = []
     for i in range(1, event.capacity + 1):
         seat_number = f"{event.venue[:3].upper()}-{i}"  # Unique seat ID per venue
@@ -77,13 +85,14 @@ async def create_event(event: schemas.EventCreate, db: Session = Depends(get_db)
 
     db.add_all(seats)
     db.commit()
+    ###"""
 
     return db_event
 
 # ✅ Update an event 
 @app.patch("/events/{event_id}", response_model=schemas.EventResponse)
 def update_event(event_id: int, event_data: schemas.EventUpdate, db: Session = Depends(get_db)):
-    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    event = db.query(models.Event).filter(models.Event.event_id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
     
@@ -97,7 +106,7 @@ def update_event(event_id: int, event_data: schemas.EventUpdate, db: Session = D
 # ✅ Delete an event
 @app.delete("/events/{event_id}")
 def delete_event(event_id: int, db: Session = Depends(get_db)):
-    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    event = db.query(models.Event).filter(models.Event.event_id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
     

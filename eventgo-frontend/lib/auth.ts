@@ -13,11 +13,11 @@ export async function loginUser(email: string, password: string) {
   return response.json();
 }
 
-export async function registerUser(email: string, password: string) {
+export async function registerUser(email: string, password: string, full_name: string, role: string = "user") {
   const response = await fetch(`${AUTH_API_URL}/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, full_name, role }),
     credentials: "include", // ✅ Ensure cookies are included
   });
 
@@ -35,7 +35,14 @@ export async function fetchUser() {
   });
 
   if (!response.ok) throw new Error("Unauthorized");
-  return response.json();
+
+  const userData = await response.json();
+  return {
+    id: userData.id,
+    email: userData.email,
+    full_name: userData.full_name,
+    role: userData.role,
+  };
 }
 
 export async function logoutUser() {
@@ -50,5 +57,19 @@ export async function debugCookies() {
     method: "GET",
     credentials: "include",
   });
+  const data = await response.json();
+  console.log("Debug Cookies:", data);
+  return data;
+}
+
+export async function searchUsers(email: string) {
+  const response = await fetch(`${AUTH_API_URL}/search-users?email=${encodeURIComponent(email)}`, {
+    method: "GET",
+    credentials: "include", // ✅ Ensure cookies are included
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || "Search failed");
+  }
   return response.json();
 }
