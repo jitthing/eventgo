@@ -114,6 +114,38 @@ public class TicketController {
             )
         ));
     }
+
+        // CONFIRM TICKET PURCHASE FOR SPLIT BOOKING
+        @Operation(
+            summary = "Confirm ticket purchase for split booking",
+            description = "Confirms a specific ticket reservation after successful payment. Changes only the specified ticket status from reserved to sold."
+        )
+        @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Purchase successfully confirmed"),
+            @ApiResponse(responseCode = "400", description = "Invalid reservation or ticket no longer reserved"),
+            @ApiResponse(responseCode = "404", description = "Reservation or ticket not found")
+        })
+        @PatchMapping("/confirm-split")
+        public ResponseEntity<Map<String, String>> confirmSeatSplitBooking(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Confirmation details including specific ticket",
+                required = true,
+                content = @Content(schema = @Schema(implementation = ConfirmTicketSplitRequest.class))
+            )
+            @RequestBody ConfirmTicketSplitRequest request
+        ) {
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", ticketService.confirmSeatSplitBooking(
+                    request.getReservationId(),
+                    request.getUserId(),
+                    request.getPaymentIntentId(),
+                    request.getTicketId()
+                )
+            ));
+        }
+
+    
     // RELEASE RESERVED SEATS
     @Operation(
         summary = "Release reserved seats",

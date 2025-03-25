@@ -324,5 +324,37 @@ public class TicketService {
         
         return response;
     }
+
+    @Transactional
+    public String confirmSeatSplitBooking(Long reservationId, Long userId, String paymentIntentId, Long ticketId) {
+        List<Ticket> tickets = ticketRepository.findByReservationId(reservationId);
+
+        if (tickets.isEmpty()) {
+            return "Invalid reservation ID or no reserved tickets found";
+        }
+
+        Optional<Ticket> ticketToConfirm = tickets.stream()
+            .filter(t -> t.getTicketId().equals(ticketId))
+            .findFirst();
+
+        if (ticketToConfirm.isEmpty()) {
+            return "Ticket not found in this reservation";
+        }
+
+        Ticket ticket = ticketToConfirm.get();
+        if (ticket.getStatus() != TicketStatus.reserved) {
+            return "Ticket is not in a reserved state";
+        }
+
+        ticket.setStatus(TicketStatus.sold);
+        ticket.setReservationExpires(null);
+        ticket.setReservationId(null);
+        ticket.setUserId(userId);
+        ticket.setPaymentIntentId(paymentIntentId);
+
+        ticketRepository.save(ticket);
+
+        return "Ticket purchase confirmed for user ID: " + userId;
+    }
 }
 
