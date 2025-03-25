@@ -9,6 +9,10 @@ import pika
 import uuid
 from . import schemas
 from dotenv import load_dotenv
+import pika
+import json
+from datetime import datetime
+import uuid
 
 load_dotenv()
 
@@ -24,9 +28,10 @@ app.add_middleware(
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
-# Define the base URL for the stripe service - use the Docker service name
-STRIPE_SERVICE_URL = os.environ.get("STRIPE_SERVICE_URL", "http://stripe-service:8000")
-TICKET_INVENTORY_URL = os.environ.get("TICKET_INVENTORY_URL", "http://ticket-inventory:8080")
+# Service URLs
+STRIPE_SERVICE_URL = os.environ.get("STRIPE_SERVICE_URL")
+TICKET_INVENTORY_URL = os.environ.get("TICKET_INVENTORY_URL")
+TICKET_TRANSFER_URL = os.environ.get("TICKET_TRANSFER_URL")
 
 # RabbitMQ Configuration
 RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "rabbitmq")
@@ -67,7 +72,7 @@ def publish_message(message, routing_key=NOTIFICATION_ROUTING_KEY):
             properties=pika.BasicProperties(delivery_mode=2, content_type='application/json')
         )
         
-        print(f"Published message with ID {message_id} to exchange {NOTIFICATION_EXCHANGE}")
+        # print(f"Published message with ID {message_id} to exchange {NOTIFICATION_EXCHANGE}")
         connection.close()
         return True
     except Exception as e:
@@ -113,7 +118,6 @@ async def stripe_webhook(request: Request):
             except Exception as e:
                 return {"status": "ok"}
             
-            
             # Here you would typically make an API call to your tickets service
             # to create the tickets now that payment is confirmed
             
@@ -129,9 +133,47 @@ async def stripe_webhook(request: Request):
         elif event.type == "checkout.session.completed":
             # Handle completed payments from payment links
             session = event.data.object
-            
+
+            # If this is a ticket transfer checkout
+            if session.metadata and "transfer_id" in session.metadata:
+                try:
+                    # transfer_id = session.metadata.get("transfer_id")
+                    ticket_id = session.metadata.get("ticket_id")
+                    seller_id = session.metadata.get("seller_id")
+                    seller_email = session.metadata.get("seller_email")
+                    buyer_email = session.metadata.get("buyer_email")
+                    buyer_id = session.metadata.get("buyer_id")
+                    amount_in_cents = session.metadata.get("amount_in_cents")
+                    original_payment_intent_id = session.metadata.get("original_payment_intent")
+
+                    # Extract the new payment intent ID from the session
+                    new_payment_intent_id = session.payment_intent
+
+                    transfer_body = {
+                        "original_payment_intent": original_payment_intent_id,
+                        "new_payment_intent": new_payment_intent_id,
+                        "ticket_id": ticket_id,
+                        "seller_id": seller_id,
+                        "seller_email": seller_email,
+                        "buyer_id": buyer_id,
+                        "buyer_email": buyer_email,
+                        "amount": amount_in_cents
+                    }
+                    print(f"[CALL] Calling {TICKET_TRANSFER_URL} to transfer tickets with {transfer_body}")
+                    ticket_transfer = requests.post(
+                        f"{TICKET_TRANSFER_URL}/transfer",
+                        json=transfer_body
+                    )
+                    if ticket_transfer.status_code != 200:
+                        return {"status": "error", "message": f"Transfer failed: {ticket_transfer.text}"}
+                    
+                    return { "status": "ok"}
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=str(e))
+                
+                
             # If this is a split payment link checkout
-            if session.metadata and "split_payment_id" in session.metadata:
+            elif session.metadata and "split_payment_id" in session.metadata:
                 # split_payment_id = session.metadata.get("split_payment_id")
                 # if split_payment_id in split_payments:
                 #     print(f"Payment for split payment {split_payment_id} by {session.metadata.get('participant_email')} completed!")
@@ -209,9 +251,6 @@ async def stripe_webhook(request: Request):
 @app.post("/party-booking")
 async def party_booking(request: schemas.PartyBookingRequest):
     """
-    ORCHESTRATOR FUNCTION TO HANDLE PARTY BOOKING
-    1. Initiate split payment to payment service
-    2. Publish payment link and payment receiver to RabbitMQ Queue
     """
     # get links and email
     print(request.items)

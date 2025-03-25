@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 class WebhookResponse(BaseModel):
     status: str
+    message: Optional[str] = None
 
 class SplitPaymentLinkResponse(BaseModel):
     payment_link_id: str
@@ -31,3 +32,8 @@ class PartyBookingRequest(BaseModel):
     items: List[PartyBookingRequestItem]
     event_id: int
     reservation_id: int
+
+class TransferNotification(BaseModel):
+    subject: str
+    message: str
+    recipient_email_address: str

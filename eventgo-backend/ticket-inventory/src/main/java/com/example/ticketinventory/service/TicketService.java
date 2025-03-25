@@ -264,34 +264,35 @@ public class TicketService {
     }
 
     @Transactional
-    public Map<String, Object> transferTicket(Long ticketId, Long currentUserId, Long newUserId) {
+    public Map<String, Object> transferTicket(Long ticketId, Long currentUserId, Long newUserId, String paymentIntentId) {
         Map<String, Object> response = new HashMap<>();
         
         Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
-        if (ticketOpt.isEmpty()) {
-            response.put("status", "error");
-            response.put("message", "Ticket not found");
-            return response;
-        }
+        // if (ticketOpt.isEmpty()) {
+        //     response.put("status", "error");
+        //     response.put("message", "Ticket not found");
+        //     return response;
+        // }
 
         Ticket ticket = ticketOpt.get();
 
-        // Validate current ownership
-        if (ticket.getUserId() == null || !ticket.getUserId().equals(currentUserId)) {
-            response.put("status", "error");
-            response.put("message", "Invalid ticket ownership");
-            return response;
-        }
+        // // Validate current ownership
+        // if (ticket.getUserId() == null || !ticket.getUserId().equals(currentUserId)) {
+        //     response.put("status", "error");
+        //     response.put("message", "Invalid ticket ownership");
+        //     return response;
+        // }
 
         // Validate ticket is in sold status (can only transfer purchased tickets)
-        if (ticket.getStatus() != TicketStatus.sold) {
-            response.put("status", "error");
-            response.put("message", "Only purchased tickets can be transferred");
-            return response;
-        }
+        // if (ticket.getStatus() != TicketStatus.sold) {
+        //     response.put("status", "error");
+        //     response.put("message", "Only purchased tickets can be transferred");
+        //     return response;
+        // }
 
         // Perform transfer
         ticket.setUserId(newUserId);
+        ticket.setPaymentIntentId(paymentIntentId);
         ticketRepository.save(ticket);
 
         response.put("status", "success");
@@ -300,6 +301,60 @@ public class TicketService {
         response.put("new_user_id", newUserId);
         
         return response;
+    }
+
+    public Map<String, Object> getTicketById(Long ticketId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        if (ticketOpt.isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "Ticket not found");
+            return response;
+        }
+        
+        Ticket ticket = ticketOpt.get();
+        response.put("status", "success");
+        response.put("ticket_id", ticket.getTicketId());
+        response.put("user_id", ticket.getUserId());
+        response.put("event_id", ticket.getEventId());
+        response.put("status", ticket.getStatus().toString());
+        response.put("payment_intent_id", ticket.getPaymentIntentId());
+        response.put("price", ticket.getPrice());
+        
+        return response;
+    }
+
+    @Transactional
+    public String confirmSeatSplitBooking(Long reservationId, Long userId, String paymentIntentId, Long ticketId) {
+        List<Ticket> tickets = ticketRepository.findByReservationId(reservationId);
+
+        if (tickets.isEmpty()) {
+            return "Invalid reservation ID or no reserved tickets found";
+        }
+
+        Optional<Ticket> ticketToConfirm = tickets.stream()
+            .filter(t -> t.getTicketId().equals(ticketId))
+            .findFirst();
+
+        if (ticketToConfirm.isEmpty()) {
+            return "Ticket not found in this reservation";
+        }
+
+        Ticket ticket = ticketToConfirm.get();
+        if (ticket.getStatus() != TicketStatus.reserved) {
+            return "Ticket is not in a reserved state";
+        }
+
+        ticket.setStatus(TicketStatus.sold);
+        ticket.setReservationExpires(null);
+        ticket.setReservationId(null);
+        ticket.setUserId(userId);
+        ticket.setPaymentIntentId(paymentIntentId);
+
+        ticketRepository.save(ticket);
+
+        return "Ticket purchase confirmed for user ID: " + userId;
     }
 }
 
