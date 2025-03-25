@@ -2,8 +2,11 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import stripe
+import datetime
 import requests
 import json
+import pika
+import uuid
 from . import schemas
 from dotenv import load_dotenv
 
@@ -24,6 +27,52 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 # Define the base URL for the stripe service - use the Docker service name
 STRIPE_SERVICE_URL = os.environ.get("STRIPE_SERVICE_URL", "http://stripe-service:8000")
 TICKET_INVENTORY_URL = os.environ.get("TICKET_INVENTORY_URL", "http://ticket-inventory:8080")
+
+# RabbitMQ Configuration
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "rabbitmq")
+RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", 5672))
+RABBITMQ_USERNAME = os.environ.get("RABBITMQ_USERNAME", "guest")
+RABBITMQ_PASSWORD = os.environ.get("RABBITMQ_PASSWORD", "guest")
+NOTIFICATION_EXCHANGE = os.environ.get("NOTIFICATION_EXCHANGE", "notification_exchange")
+NOTIFICATION_ROUTING_KEY = os.environ.get("NOTIFICATION_ROUTING_KEY", "notification.queue")
+
+def publish_message(message, routing_key=NOTIFICATION_ROUTING_KEY):
+    """
+    Publish a message to RabbitMQ
+    """
+    try:
+        # Setup RabbitMQ connection
+        credentials = pika.PlainCredentials(RABBITMQ_USERNAME, RABBITMQ_PASSWORD)
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host=RABBITMQ_HOST,
+                port=RABBITMQ_PORT,
+                credentials=credentials
+            )
+        )
+        channel = connection.channel()
+        
+        # Ensure exchange exists
+        channel.exchange_declare(
+            exchange=NOTIFICATION_EXCHANGE,
+            exchange_type='topic',
+            durable=True
+        )
+        
+        # Publish message
+        channel.basic_publish(
+            exchange="",
+            routing_key=routing_key,
+            body=json.dumps(message),
+            properties=pika.BasicProperties(delivery_mode=2, content_type='application/json')
+        )
+        
+        print(f"Published message with ID {message_id} to exchange {NOTIFICATION_EXCHANGE}")
+        connection.close()
+        return True
+    except Exception as e:
+        print(f"Failed to publish message: {str(e)}")
+        return False
 
 # this will be moved to orchestrator to react to webhook events
 @app.post("/webhook", response_model=schemas.WebhookResponse)
@@ -117,7 +166,30 @@ async def stripe_webhook(request: Request):
                     ticket_response_object = ticket_response.json()
                     print(ticket_response_object)
 
-                    # publish to queue
+                    payload = {
+                        # "notificationId": str(uuid.uuid4()),
+                        # "timestamp": datetime.now().isoformat(),
+                        "message": f"Your payment of ${payment_intent_id} has been completed for reservation {reservation_id}",
+                        "subject": "Payment Completed",
+                        "recipientEmailAddress": participant_email,
+                        "notificationType": "PAYMENT_CONFIRMATION"
+                    }
+
+                    # Prepare notification payload
+                    # notification_payload = {
+                    #     "subject": "Payment Completed",
+                    #     "message": f"Your payment of ${payment_intent_id} has been completed for reservation {reservation_id}",
+                    #     "recipientEmailAddress": participant_email,
+                    #     "notificationType": "PAYMENT_CONFIRMATION"
+                    # }
+                    
+                    # Publish to notification queue
+                    publish_success = publish_message(payload)
+                    if publish_success:
+                        print(f"Successfully published payment completion notification for {participant_email}")
+                    else:
+                        print(f"Failed to publish notification for {participant_email}")
+                    
                     return ticket_response_object
                 except Exception as e:
                     print(f"Unexpected error: {str(e)}")
@@ -140,58 +212,6 @@ async def party_booking(request: schemas.PartyBookingRequest):
     ORCHESTRATOR FUNCTION TO HANDLE PARTY BOOKING
     1. Initiate split payment to payment service
     2. Publish payment link and payment receiver to RabbitMQ Queue
-
-    Split Payment Link Request
-    {
-        "event_id": "event_12345",
-        "seats": ["B12", "B13", "B14"],
-        "currency": "sgd",
-        "participants": 
-            [
-                {
-                    "email": "alice@example.com",
-                    "name": "Alice Smith",
-                    "amount": 3000
-                },
-                {
-                    "email": "bob@example.com",
-                    "name": "Bob Johnson",
-                    "amount": 3000
-                },
-                {
-                    "email": "charlie@example.com",
-                    "name": "Charlie Davis",
-                    "amount": 3000
-                }
-            ],
-        "description": "Concert Tickets for The Amazing Band",
-        "redirect_url": "http://localhost:3000"
-        }
-
-        Payment Link Response
-        {
-        "split_payment_id":"616b0557-0ac5-484c-b2a3-a216cd596128",
-        "payment_links":
-            [
-                {
-                "payment_link_id":"plink_1R3YoNEJx3PoDEOV0K3xFtOH",
-                "url":"https://buy.stripe.com/test_4gw4iO4ZU10R79S28w",
-                "participant_email":"alice@example.com",
-                "amount":3000,
-                "expires_at":1742285654
-                },
-                {
-                "payment_link_id":"plink_1R3YoNEJx3PoDEOVIGgmiVSw",
-                "url":"https://buy.stripe.com/test_fZe16CgIC6lbeCk8wV",
-                "participant_email":"bob@example.com",
-                "amount":3000,
-                "expires_at":1742285655
-                }
-            ],
-            "total_amount":9000,
-            "event_id":"event_12345",
-            "seats":["B12","B13","B14"]
-        }
     """
     # get links and email
     print(request.items)
@@ -238,11 +258,23 @@ async def party_booking(request: schemas.PartyBookingRequest):
             if payment_link_obj.get('participant_email') == leader:
                 res["redirect_url"] = payment_link_obj.get('url')
             else:
-                # push to queue
-                print(f"{payment_link_obj.get('url')} belongs to {payment_link_obj.get('participant_email')}")
-
-        # get leaders url and return, the rest push to queue
-        # publish to queue 
+                # Push notification about payment link to queue
+                # notification_payload = {
+                #     "subject": "Payment Link Created",
+                #     "message": f"Please complete your payment using this link: {payment_link_obj.get('url')}. Amount: ${payment_link_obj.get('amount')/100:.2f}",
+                #     "recipientEmailAddress": payment_link_obj.get('participant_email'),
+                #     "notificationType": "PAYMENT_LINK"
+                # }
+                payload = {
+                        # "notificationId": str(uuid.uuid4()),
+                        # "timestamp": datetime.now().isoformat(),
+                        "message": f"Please complete your payment using this link: {payment_link_obj.get('url')}. Amount: ${payment_link_obj.get('amount')/100:.2f}",
+                        "subject": "Payment Link",
+                        "recipientEmailAddress": payment_link_obj.get('participant_email'),
+                        "notificationType": "PAYMENT_LINK"
+                    }
+                publish_message(payload)
+                print(f"Published payment link for {payment_link_obj.get('participant_email')} to notification queue")
 
         return {"status": "ok", "data": res}
     except requests.exceptions.RequestException as e:

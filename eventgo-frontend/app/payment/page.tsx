@@ -7,6 +7,7 @@ import BackButton from "@/components/BackButton";
 import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe, StripeElementsOptions } from "@stripe/stripe-js";
+import { useAuth } from "@/context/AuthContext";
 
 // Make sure to call loadStripe outside component rendering
 const stripePromise = loadStripe(
@@ -17,13 +18,22 @@ interface PaymentFormProps {
   eventId: string | null;
   seats: string | null;
   total: string | null;
-  reservationId: string | null;  // Add reservationId
-  userId: string | null;         // Add userId
+  reservationId: string | null; // Add reservationId
+  userId: string | null;
+  userEmail: string | null; // Add userId
   onSuccess: () => void;
 }
 
 // Create a PaymentForm component that uses Stripe
-function PaymentForm({ eventId, seats, total, reservationId, userId, onSuccess }: PaymentFormProps) {
+function PaymentForm({
+  eventId,
+  seats,
+  total,
+  reservationId,
+  userId,
+  userEmail,
+  onSuccess,
+}: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState<boolean>(false);
@@ -134,11 +144,13 @@ function PaymentForm({ eventId, seats, total, reservationId, userId, onSuccess }
           const errorData = await confirmResponse.json();
           throw new Error(errorData.detail || "Failed to confirm payment");
         }
-        
+
         // Then call process-booking endpoint in Booking service
+        console.log(userEmail);
         const processBookingResponse = await fetch(
           `${
-            process.env.NEXT_PUBLIC_BOOKING_SERVICE_API_URL || "http://localhost:8007"
+            process.env.NEXT_PUBLIC_BOOKING_SERVICE_API_URL ||
+            "http://localhost:8007"
           }/bookings/process-booking`,
           {
             method: "POST",
@@ -148,26 +160,31 @@ function PaymentForm({ eventId, seats, total, reservationId, userId, onSuccess }
               seats: seats?.split(","),
               paymentIntentId: paymentIntent.id,
               reservationId: reservationId, // Add reservationId
-              userId: userId               // Add userId
+              userId: userId, // Add userId
+              userEmail: userEmail ? userEmail : "test@gmail.com",
             }),
           }
         );
 
         if (!processBookingResponse.ok) {
           const errorData = await processBookingResponse.json();
-          throw new Error(errorData.errorMessage || "Failed to process booking");
+          throw new Error(
+            errorData.errorMessage || "Failed to process booking"
+          );
         }
 
         // Check that the booking was successful
         const bookingResult = await processBookingResponse.json();
         if (bookingResult.status !== "SUCCESS") {
-          throw new Error(bookingResult.confirmationMessage || "Booking processing failed");
+          throw new Error(
+            bookingResult.confirmationMessage || "Booking processing failed"
+          );
         }
 
         // Clear localStorage after successful processing
         localStorage.removeItem("reservationId");
         localStorage.removeItem("userId");
-        
+
         // Pass the payment intent ID to the success handler
         onSuccess();
       } else {
@@ -230,7 +247,9 @@ function PaymentForm({ eventId, seats, total, reservationId, userId, onSuccess }
 export default function PaymentPage(): JSX.Element {
   const searchParams = useSearchParams();
   const router = useRouter();
-  
+
+  const { user } = useAuth();
+
   const eventId = searchParams.get("eventId");
   const seats = searchParams.get("seats");
   const total = searchParams.get("total");
@@ -249,7 +268,7 @@ export default function PaymentPage(): JSX.Element {
         setReservationId(storedReservationId);
       }
     }
-    
+
     // Get userId from localStorage
     const storedUserId = localStorage.getItem("userId");
     if (storedUserId) {
@@ -314,8 +333,9 @@ export default function PaymentPage(): JSX.Element {
                 eventId={eventId}
                 seats={seats}
                 total={total}
-                reservationId={reservationId}  // Pass reservationId
-                userId={userId}                 // Pass userId
+                reservationId={reservationId} // Pass reservationId
+                userId={userId}
+                userEmail={user.email} // Pass userId
                 onSuccess={handlePaymentSuccess}
               />
             </Elements>
