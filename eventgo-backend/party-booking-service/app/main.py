@@ -214,7 +214,7 @@ async def stripe_webhook(request: Request):
                         "message": f"Your payment of ${payment_intent_id} has been completed for reservation {reservation_id}",
                         "subject": "Payment Completed",
                         "recipientEmailAddress": participant_email,
-                        "notificationType": "PAYMENT_CONFIRMATION"
+                        # "notificationType": "PAYMENT_CONFIRMATION"
                     }
 
                     # Prepare notification payload
@@ -310,7 +310,7 @@ async def party_booking(request: schemas.PartyBookingRequest):
                         "message": f"Please complete your payment using this link: {payment_link_obj.get('url')}. Amount: ${payment_link_obj.get('amount')/100:.2f}",
                         "subject": "Payment Link",
                         "recipientEmailAddress": payment_link_obj.get('participant_email'),
-                        "notificationType": "PAYMENT_LINK"
+                        # "notificationType": "PAYMENT_LINK"
                     }
                 publish_message(payload)
                 print(f"Published payment link for {payment_link_obj.get('participant_email')} to notification queue")
