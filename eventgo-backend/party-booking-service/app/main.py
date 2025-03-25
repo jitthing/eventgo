@@ -2,8 +2,11 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import stripe
+import datetime
 import requests
 import json
+import pika
+import uuid
 from . import schemas
 from dotenv import load_dotenv
 import pika
@@ -31,54 +34,50 @@ TICKET_INVENTORY_URL = os.environ.get("TICKET_INVENTORY_URL")
 TICKET_TRANSFER_URL = os.environ.get("TICKET_TRANSFER_URL")
 
 # RabbitMQ Configuration
-RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST")
-RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT"))
-RABBITMQ_USERNAME = os.environ.get("RABBITMQ_USERNAME")
-RABBITMQ_PASSWORD = os.environ.get("RABBITMQ_PASSWORD")
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "rabbitmq")
+RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", 5672))
+RABBITMQ_USERNAME = os.environ.get("RABBITMQ_USERNAME", "guest")
+RABBITMQ_PASSWORD = os.environ.get("RABBITMQ_PASSWORD", "guest")
+NOTIFICATION_EXCHANGE = os.environ.get("NOTIFICATION_EXCHANGE", "notification_exchange")
+NOTIFICATION_ROUTING_KEY = os.environ.get("NOTIFICATION_ROUTING_KEY", "notification.queue")
 
-# Queue names
-NOTIFICATION_QUEUE = "notification.queue"
-
-
-def get_rabbitmq_connection():
-    """Create and return a RabbitMQ connection"""
-    credentials = pika.PlainCredentials(RABBITMQ_USERNAME, RABBITMQ_PASSWORD)
-    parameters = pika.ConnectionParameters(
-        host=RABBITMQ_HOST,
-        port=RABBITMQ_PORT,
-        credentials=credentials
-    )
-    return pika.BlockingConnection(parameters)
-
-def publish_notification(notification: schemas.TransferNotification):
-    """Publish notification to RabbitMQ queue"""
+def publish_message(message, routing_key=NOTIFICATION_ROUTING_KEY):
+    """
+    Publish a message to RabbitMQ
+    """
     try:
-        connection = get_rabbitmq_connection()
+        # Setup RabbitMQ connection
+        credentials = pika.PlainCredentials(RABBITMQ_USERNAME, RABBITMQ_PASSWORD)
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host=RABBITMQ_HOST,
+                port=RABBITMQ_PORT,
+                credentials=credentials
+            )
+        )
         channel = connection.channel()
         
-        # Declare queue
-        channel.queue_declare(queue=NOTIFICATION_QUEUE, durable=True)
+        # Ensure exchange exists
+        channel.exchange_declare(
+            exchange=NOTIFICATION_EXCHANGE,
+            exchange_type='topic',
+            durable=True
+        )
         
         # Publish message
         channel.basic_publish(
-            exchange='',
-            routing_key=NOTIFICATION_QUEUE,
-            body=json.dumps({
-                "subject": notification.subject,
-                "message": notification.message,
-                "recipientEmailAddress": notification.recipient_email_address,
-                "notificationId": str(uuid.uuid4()),
-                "timestamp": datetime.now().isoformat()
-            }),
-            properties=pika.BasicProperties(
-                delivery_mode=2,  # make message persistent
-            )
+            exchange="",
+            routing_key=routing_key,
+            body=json.dumps(message),
+            properties=pika.BasicProperties(delivery_mode=2, content_type='application/json')
         )
         
+        # print(f"Published message with ID {message_id} to exchange {NOTIFICATION_EXCHANGE}")
         connection.close()
+        return True
     except Exception as e:
-        print(f"Error publishing notification: {str(e)}")
-        raise
+        print(f"Failed to publish message: {str(e)}")
+        return False
 
 # this will be moved to orchestrator to react to webhook events
 @app.post("/webhook", response_model=schemas.WebhookResponse)
@@ -209,7 +208,30 @@ async def stripe_webhook(request: Request):
                     ticket_response_object = ticket_response.json()
                     print(ticket_response_object)
 
-                    # publish to queue
+                    payload = {
+                        # "notificationId": str(uuid.uuid4()),
+                        # "timestamp": datetime.now().isoformat(),
+                        "message": f"Your payment of ${payment_intent_id} has been completed for reservation {reservation_id}",
+                        "subject": "Payment Completed",
+                        "recipientEmailAddress": participant_email,
+                        "notificationType": "PAYMENT_CONFIRMATION"
+                    }
+
+                    # Prepare notification payload
+                    # notification_payload = {
+                    #     "subject": "Payment Completed",
+                    #     "message": f"Your payment of ${payment_intent_id} has been completed for reservation {reservation_id}",
+                    #     "recipientEmailAddress": participant_email,
+                    #     "notificationType": "PAYMENT_CONFIRMATION"
+                    # }
+                    
+                    # Publish to notification queue
+                    publish_success = publish_message(payload)
+                    if publish_success:
+                        print(f"Successfully published payment completion notification for {participant_email}")
+                    else:
+                        print(f"Failed to publish notification for {participant_email}")
+                    
                     return ticket_response_object
                 except Exception as e:
                     print(f"Unexpected error: {str(e)}")
@@ -275,11 +297,23 @@ async def party_booking(request: schemas.PartyBookingRequest):
             if payment_link_obj.get('participant_email') == leader:
                 res["redirect_url"] = payment_link_obj.get('url')
             else:
-                # push to queue
-                print(f"{payment_link_obj.get('url')} belongs to {payment_link_obj.get('participant_email')}")
-
-        # get leaders url and return, the rest push to queue
-        # publish to queue 
+                # Push notification about payment link to queue
+                # notification_payload = {
+                #     "subject": "Payment Link Created",
+                #     "message": f"Please complete your payment using this link: {payment_link_obj.get('url')}. Amount: ${payment_link_obj.get('amount')/100:.2f}",
+                #     "recipientEmailAddress": payment_link_obj.get('participant_email'),
+                #     "notificationType": "PAYMENT_LINK"
+                # }
+                payload = {
+                        # "notificationId": str(uuid.uuid4()),
+                        # "timestamp": datetime.now().isoformat(),
+                        "message": f"Please complete your payment using this link: {payment_link_obj.get('url')}. Amount: ${payment_link_obj.get('amount')/100:.2f}",
+                        "subject": "Payment Link",
+                        "recipientEmailAddress": payment_link_obj.get('participant_email'),
+                        "notificationType": "PAYMENT_LINK"
+                    }
+                publish_message(payload)
+                print(f"Published payment link for {payment_link_obj.get('participant_email')} to notification queue")
 
         return {"status": "ok", "data": res}
     except requests.exceptions.RequestException as e:
