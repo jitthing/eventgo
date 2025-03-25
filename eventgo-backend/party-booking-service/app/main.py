@@ -25,13 +25,10 @@ app.add_middleware(
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
-# Define the base URL for the stripe service - use the Docker service name
-STRIPE_SERVICE_URL = os.environ.get("STRIPE_SERVICE_URL", "http://stripe-service:8000")
-TICKET_INVENTORY_URL = os.environ.get("TICKET_INVENTORY_URL", "http://ticket-inventory:8080")
-
 # Service URLs
 STRIPE_SERVICE_URL = os.environ.get("STRIPE_SERVICE_URL")
 TICKET_INVENTORY_URL = os.environ.get("TICKET_INVENTORY_URL")
+TICKET_TRANSFER_URL = os.environ.get("TICKET_TRANSFER_URL")
 
 # RabbitMQ Configuration
 RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST")
@@ -122,7 +119,6 @@ async def stripe_webhook(request: Request):
             except Exception as e:
                 return {"status": "ok"}
             
-            
             # Here you would typically make an API call to your tickets service
             # to create the tickets now that payment is confirmed
             
@@ -148,85 +144,37 @@ async def stripe_webhook(request: Request):
                     seller_email = session.metadata.get("seller_email")
                     buyer_email = session.metadata.get("buyer_email")
                     buyer_id = session.metadata.get("buyer_id")
+                    amount_in_cents = session.metadata.get("amount_in_cents")
+                    original_payment_intent_id = session.metadata.get("original_payment_intent")
 
                     # Extract the new payment intent ID from the session
                     new_payment_intent_id = session.payment_intent
-                    
-                    # Get the original payment_intent_id from ticket inventory service
-                    print(f"Retrieving ticket info for ticket ID: {ticket_id}")
-                    ticket_info_response = requests.get(
-                        f"{TICKET_INVENTORY_URL}/tickets/id/{ticket_id}",
-                        timeout=10
-                    )
-                    
-                    if ticket_info_response.status_code != 200:
-                        print(f"Failed to get ticket info: {ticket_info_response.status_code} - {ticket_info_response.text}")
-                        return {"status": "error", "message": f"Failed to retrieve ticket info: {ticket_info_response.text}"}
-                    
-                    ticket_info = ticket_info_response.json()
-                    print(f"Ticket info retrieved: {ticket_info}")
-                    
-                    original_payment_intent_id = ticket_info.get("payment_intent_id")
-                    
-                    if not original_payment_intent_id:
-                        print("No payment_intent_id found in ticket info")
-                        return {"status": "error", "message": "Original payment intent ID not found for this ticket"}
-                    
-                    # 1. Process refund to seller using the original payment_intent_id
-                    print(f"Processing refund with payment_intent_id: {original_payment_intent_id}")
-                    refund_response = requests.post(
-                        f"{STRIPE_SERVICE_URL}/refund",
-                        json={
-                            "payment_intent_id": original_payment_intent_id,
-                            "amount": session.amount_total,
-                            "reason": "ticket_transfer"
-                        }
-                    )
-                    
-                    print(f"Refund response: {refund_response.status_code} - {refund_response.text}")
-                    
-                    if refund_response.status_code != 200:
-                        return {"status": "error", "message": f"Refund failed: {refund_response.text}"}
-                    
-                    # 2. Update ticket ownership
-                    transfer_response = requests.patch(
-                        f"{TICKET_INVENTORY_URL}/tickets/transfer",
-                        json={
-                            "ticket_id": ticket_id,
-                            "current_user_id": seller_id,
-                            "new_user_id": buyer_id,
-                            "payment_intent_id": new_payment_intent_id
-                        }
-                    )
-                    
-                    if transfer_response.status_code != 200:
-                        return {"status": "error", "message": f"Ticket transfer failed: {transfer_response.text}"}
-                    
-                    # 3. Send notifications directly using RabbitMQ
-                    # To buyer
-                    buyer_notification = schemas.TransferNotification(
-                        subject="Ticket Transfer Successful",
-                        message=f"Your ticket transfer has been completed successfully! Ticket #{ticket_id} is now in your account.",
-                        recipient_email_address=buyer_email
-                    )
-                    publish_notification(buyer_notification)
 
-                    # To seller
-                    seller_notification = schemas.TransferNotification(
-                        subject="Ticket Transfer Completed",
-                        message=f"Your ticket #{ticket_id} has been successfully transferred. The refund will be processed shortly.",
-                        recipient_email_address=seller_email
+                    transfer_body = {
+                        "original_payment_intent": original_payment_intent_id,
+                        "new_payment_intent": new_payment_intent_id,
+                        "ticket_id": ticket_id,
+                        "seller_id": seller_id,
+                        "seller_email": seller_email,
+                        "buyer_id": buyer_id,
+                        "buyer_email": buyer_email,
+                        "amount": amount_in_cents
+                    }
+                    print(f"[CALL] Calling {TICKET_TRANSFER_URL} to transfer tickets with {transfer_body}")
+                    ticket_transfer = requests.post(
+                        f"{TICKET_TRANSFER_URL}/transfer",
+                        json=transfer_body
                     )
-                    publish_notification(seller_notification)
+                    if ticket_transfer.status_code != 200:
+                        return {"status": "error", "message": f"Transfer failed: {ticket_transfer.text}"}
                     
-                    return {"status": "success", "message": "Ticket transfer completed"}
-                    
+                    return { "status": "ok"}
                 except Exception as e:
-                    print(f"Error processing ticket transfer: {str(e)}")
-                    return {"status": "error", "message": f"Error processing ticket transfer: {str(e)}"}
+                    raise HTTPException(status_code=500, detail=str(e))
+                
                 
             # If this is a split payment link checkout
-            if session.metadata and "split_payment_id" in session.metadata:
+            elif session.metadata and "split_payment_id" in session.metadata:
                 # split_payment_id = session.metadata.get("split_payment_id")
                 # if split_payment_id in split_payments:
                 #     print(f"Payment for split payment {split_payment_id} by {session.metadata.get('participant_email')} completed!")
@@ -281,61 +229,6 @@ async def stripe_webhook(request: Request):
 @app.post("/party-booking")
 async def party_booking(request: schemas.PartyBookingRequest):
     """
-    ORCHESTRATOR FUNCTION TO HANDLE PARTY BOOKING
-    1. Initiate split payment to payment service
-    2. Publish payment link and payment receiver to RabbitMQ Queue
-
-    Split Payment Link Request
-    {
-        "event_id": "event_12345",
-        "seats": ["B12", "B13", "B14"],
-        "currency": "sgd",
-        "participants": 
-            [
-                {
-                    "email": "alice@example.com",
-                    "name": "Alice Smith",
-                    "amount": 3000
-                },
-                {
-                    "email": "bob@example.com",
-                    "name": "Bob Johnson",
-                    "amount": 3000
-                },
-                {
-                    "email": "charlie@example.com",
-                    "name": "Charlie Davis",
-                    "amount": 3000
-                }
-            ],
-        "description": "Concert Tickets for The Amazing Band",
-        "redirect_url": "http://localhost:3000"
-        }
-
-        Payment Link Response
-        {
-        "split_payment_id":"616b0557-0ac5-484c-b2a3-a216cd596128",
-        "payment_links":
-            [
-                {
-                "payment_link_id":"plink_1R3YoNEJx3PoDEOV0K3xFtOH",
-                "url":"https://buy.stripe.com/test_4gw4iO4ZU10R79S28w",
-                "participant_email":"alice@example.com",
-                "amount":3000,
-                "expires_at":1742285654
-                },
-                {
-                "payment_link_id":"plink_1R3YoNEJx3PoDEOVIGgmiVSw",
-                "url":"https://buy.stripe.com/test_fZe16CgIC6lbeCk8wV",
-                "participant_email":"bob@example.com",
-                "amount":3000,
-                "expires_at":1742285655
-                }
-            ],
-            "total_amount":9000,
-            "event_id":"event_12345",
-            "seats":["B12","B13","B14"]
-        }
     """
     # get links and email
     print(request.items)

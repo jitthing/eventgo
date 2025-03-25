@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 class WebhookResponse(BaseModel):
     status: str
+    message: Optional[str] = None
 
 class SplitPaymentLinkResponse(BaseModel):
     payment_link_id: str

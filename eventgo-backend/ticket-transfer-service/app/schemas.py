@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 from pydantic import BaseModel
 
 class TransferPaymentRequest(BaseModel):
@@ -29,3 +29,16 @@ class TransferNotification(BaseModel):
     subject: str
     message: str
     recipient_email_address: str 
+
+class TicketTransferRequest(BaseModel):
+    original_payment_intent: str
+    new_payment_intent: str
+    ticket_id: str
+    seller_id: str
+    seller_email: str
+    buyer_email: str
+    buyer_id: str
+    amount: Union[float, int]
+
+class TicketTransferResponse(BaseModel):
+    status: str
