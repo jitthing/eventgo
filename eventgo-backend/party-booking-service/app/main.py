@@ -6,6 +6,10 @@ import requests
 import json
 from . import schemas
 from dotenv import load_dotenv
+import pika
+import json
+from datetime import datetime
+import uuid
 
 load_dotenv()
 
@@ -24,6 +28,60 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 # Define the base URL for the stripe service - use the Docker service name
 STRIPE_SERVICE_URL = os.environ.get("STRIPE_SERVICE_URL", "http://stripe-service:8000")
 TICKET_INVENTORY_URL = os.environ.get("TICKET_INVENTORY_URL", "http://ticket-inventory:8080")
+
+# Service URLs
+STRIPE_SERVICE_URL = os.environ.get("STRIPE_SERVICE_URL")
+TICKET_INVENTORY_URL = os.environ.get("TICKET_INVENTORY_URL")
+
+# RabbitMQ Configuration
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST")
+RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT"))
+RABBITMQ_USERNAME = os.environ.get("RABBITMQ_USERNAME")
+RABBITMQ_PASSWORD = os.environ.get("RABBITMQ_PASSWORD")
+
+# Queue names
+NOTIFICATION_QUEUE = "notification.queue"
+
+
+def get_rabbitmq_connection():
+    """Create and return a RabbitMQ connection"""
+    credentials = pika.PlainCredentials(RABBITMQ_USERNAME, RABBITMQ_PASSWORD)
+    parameters = pika.ConnectionParameters(
+        host=RABBITMQ_HOST,
+        port=RABBITMQ_PORT,
+        credentials=credentials
+    )
+    return pika.BlockingConnection(parameters)
+
+def publish_notification(notification: schemas.TransferNotification):
+    """Publish notification to RabbitMQ queue"""
+    try:
+        connection = get_rabbitmq_connection()
+        channel = connection.channel()
+        
+        # Declare queue
+        channel.queue_declare(queue=NOTIFICATION_QUEUE, durable=True)
+        
+        # Publish message
+        channel.basic_publish(
+            exchange='',
+            routing_key=NOTIFICATION_QUEUE,
+            body=json.dumps({
+                "subject": notification.subject,
+                "message": notification.message,
+                "recipientEmailAddress": notification.recipient_email_address,
+                "notificationId": str(uuid.uuid4()),
+                "timestamp": datetime.now().isoformat()
+            }),
+            properties=pika.BasicProperties(
+                delivery_mode=2,  # make message persistent
+            )
+        )
+        
+        connection.close()
+    except Exception as e:
+        print(f"Error publishing notification: {str(e)}")
+        raise
 
 # this will be moved to orchestrator to react to webhook events
 @app.post("/webhook", response_model=schemas.WebhookResponse)
@@ -80,7 +138,93 @@ async def stripe_webhook(request: Request):
         elif event.type == "checkout.session.completed":
             # Handle completed payments from payment links
             session = event.data.object
-            
+
+            # If this is a ticket transfer checkout
+            if session.metadata and "transfer_id" in session.metadata:
+                try:
+                    # transfer_id = session.metadata.get("transfer_id")
+                    ticket_id = session.metadata.get("ticket_id")
+                    seller_id = session.metadata.get("seller_id")
+                    seller_email = session.metadata.get("seller_email")
+                    buyer_email = session.metadata.get("buyer_email")
+                    buyer_id = session.metadata.get("buyer_id")
+
+                    # Extract the new payment intent ID from the session
+                    new_payment_intent_id = session.payment_intent
+                    
+                    # Get the original payment_intent_id from ticket inventory service
+                    print(f"Retrieving ticket info for ticket ID: {ticket_id}")
+                    ticket_info_response = requests.get(
+                        f"{TICKET_INVENTORY_URL}/tickets/id/{ticket_id}",
+                        timeout=10
+                    )
+                    
+                    if ticket_info_response.status_code != 200:
+                        print(f"Failed to get ticket info: {ticket_info_response.status_code} - {ticket_info_response.text}")
+                        return {"status": "error", "message": f"Failed to retrieve ticket info: {ticket_info_response.text}"}
+                    
+                    ticket_info = ticket_info_response.json()
+                    print(f"Ticket info retrieved: {ticket_info}")
+                    
+                    original_payment_intent_id = ticket_info.get("payment_intent_id")
+                    
+                    if not original_payment_intent_id:
+                        print("No payment_intent_id found in ticket info")
+                        return {"status": "error", "message": "Original payment intent ID not found for this ticket"}
+                    
+                    # 1. Process refund to seller using the original payment_intent_id
+                    print(f"Processing refund with payment_intent_id: {original_payment_intent_id}")
+                    refund_response = requests.post(
+                        f"{STRIPE_SERVICE_URL}/refund",
+                        json={
+                            "payment_intent_id": original_payment_intent_id,
+                            "amount": session.amount_total,
+                            "reason": "ticket_transfer"
+                        }
+                    )
+                    
+                    print(f"Refund response: {refund_response.status_code} - {refund_response.text}")
+                    
+                    if refund_response.status_code != 200:
+                        return {"status": "error", "message": f"Refund failed: {refund_response.text}"}
+                    
+                    # 2. Update ticket ownership
+                    transfer_response = requests.patch(
+                        f"{TICKET_INVENTORY_URL}/tickets/transfer",
+                        json={
+                            "ticket_id": ticket_id,
+                            "current_user_id": seller_id,
+                            "new_user_id": buyer_id,
+                            "payment_intent_id": new_payment_intent_id
+                        }
+                    )
+                    
+                    if transfer_response.status_code != 200:
+                        return {"status": "error", "message": f"Ticket transfer failed: {transfer_response.text}"}
+                    
+                    # 3. Send notifications directly using RabbitMQ
+                    # To buyer
+                    buyer_notification = schemas.TransferNotification(
+                        subject="Ticket Transfer Successful",
+                        message=f"Your ticket transfer has been completed successfully! Ticket #{ticket_id} is now in your account.",
+                        recipient_email_address=buyer_email
+                    )
+                    publish_notification(buyer_notification)
+
+                    # To seller
+                    seller_notification = schemas.TransferNotification(
+                        subject="Ticket Transfer Completed",
+                        message=f"Your ticket #{ticket_id} has been successfully transferred. The refund will be processed shortly.",
+                        recipient_email_address=seller_email
+                    )
+                    publish_notification(seller_notification)
+                    
+                    return {"status": "success", "message": "Ticket transfer completed"}
+                    
+                except Exception as e:
+                    print(f"Error processing ticket transfer: {str(e)}")
+                    return {"status": "error", "message": f"Error processing ticket transfer: {str(e)}"}
+                
             # If this is a split payment link checkout
             if session.metadata and "split_payment_id" in session.metadata:
                 # split_payment_id = session.metadata.get("split_payment_id")

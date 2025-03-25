@@ -264,7 +264,46 @@ public class TicketService {
     }
 
     @Transactional
-    public Map<String, Object> transferTicket(Long ticketId, Long currentUserId, Long newUserId) {
+    public Map<String, Object> transferTicket(Long ticketId, Long currentUserId, Long newUserId, String paymentIntentId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        // if (ticketOpt.isEmpty()) {
+        //     response.put("status", "error");
+        //     response.put("message", "Ticket not found");
+        //     return response;
+        // }
+
+        Ticket ticket = ticketOpt.get();
+
+        // // Validate current ownership
+        // if (ticket.getUserId() == null || !ticket.getUserId().equals(currentUserId)) {
+        //     response.put("status", "error");
+        //     response.put("message", "Invalid ticket ownership");
+        //     return response;
+        // }
+
+        // Validate ticket is in sold status (can only transfer purchased tickets)
+        // if (ticket.getStatus() != TicketStatus.sold) {
+        //     response.put("status", "error");
+        //     response.put("message", "Only purchased tickets can be transferred");
+        //     return response;
+        // }
+
+        // Perform transfer
+        ticket.setUserId(newUserId);
+        ticket.setPaymentIntentId(paymentIntentId);
+        ticketRepository.save(ticket);
+
+        response.put("status", "success");
+        response.put("message", "Ticket successfully transferred");
+        response.put("ticket_id", ticketId);
+        response.put("new_user_id", newUserId);
+        
+        return response;
+    }
+
+    public Map<String, Object> getTicketById(Long ticketId) {
         Map<String, Object> response = new HashMap<>();
         
         Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
@@ -273,31 +312,15 @@ public class TicketService {
             response.put("message", "Ticket not found");
             return response;
         }
-
+        
         Ticket ticket = ticketOpt.get();
-
-        // Validate current ownership
-        if (ticket.getUserId() == null || !ticket.getUserId().equals(currentUserId)) {
-            response.put("status", "error");
-            response.put("message", "Invalid ticket ownership");
-            return response;
-        }
-
-        // Validate ticket is in sold status (can only transfer purchased tickets)
-        if (ticket.getStatus() != TicketStatus.sold) {
-            response.put("status", "error");
-            response.put("message", "Only purchased tickets can be transferred");
-            return response;
-        }
-
-        // Perform transfer
-        ticket.setUserId(newUserId);
-        ticketRepository.save(ticket);
-
         response.put("status", "success");
-        response.put("message", "Ticket successfully transferred");
-        response.put("ticket_id", ticketId);
-        response.put("new_user_id", newUserId);
+        response.put("ticket_id", ticket.getTicketId());
+        response.put("user_id", ticket.getUserId());
+        response.put("event_id", ticket.getEventId());
+        response.put("status", ticket.getStatus().toString());
+        response.put("payment_intent_id", ticket.getPaymentIntentId());
+        response.put("price", ticket.getPrice());
         
         return response;
     }

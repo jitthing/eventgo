@@ -31,3 +31,8 @@ class PartyBookingRequest(BaseModel):
     items: List[PartyBookingRequestItem]
     event_id: int
     reservation_id: int
+
+class TransferNotification(BaseModel):
+    subject: str
+    message: str
+    recipient_email_address: str
