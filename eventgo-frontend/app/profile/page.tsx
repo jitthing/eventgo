@@ -248,7 +248,7 @@ export default function ProfilePage() {
 				{qrTicketId && (
 					<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
 						<div className="bg-white p-8 rounded-lg relative">
-							<button onClick={() => setQrTicketId(null)} className="absolute top-2 right-2 text-red-600 font-bold">
+							<button onClick={() => setQrTicketId(null)} className="text-xl absolute top-2 right-2 text-red-600 font-bold">
 								X
 							</button>
 							<h2 className="text-xl text-black font-semibold mb-4">Your Ticket QR Code</h2>
