@@ -66,6 +66,7 @@ def seed_users():
         {"email": "user1@example.com", "password": "password", "full_name": "Jack Neo", "role": "user"},
         {"email": "user2@example.com", "password": "password", "full_name": "Lebron James", "role": "user"},
         {"email": "user3@example.com", "password": "password", "full_name": "Mark Lee", "role": "user"},
+        {"email": "lyejiajun99@gmail.com", "password": "password", "full_name": "Jia Jun", "role": "user"},
     ]
 
     for u in users:
@@ -228,8 +229,10 @@ def generate_tickets(event_id, min_seats=10, max_seats=30):
     vip_threshold = int(seat_count * 0.2)
     
     # Randomly decide prices per category for this event
-    vip_price = random.randint(500, 2000) // 10 * 10
     standard_price = random.randint(100, 300) // 10 * 10
+    # standardize the price because UI doesn't show difference between vip and standard, just to make it consistent for now.
+    vip_price = standard_price
+    # vip_price = random.randint(500, 2000) // 10 * 10
     
     print(f"[Tickets] Generating {seat_count} tickets for Event ID {event_id} with VIP: ${vip_price}, Standard: ${standard_price}...")
 
