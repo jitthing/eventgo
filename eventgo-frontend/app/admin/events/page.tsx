@@ -19,6 +19,7 @@ export default function AdminEventsPage() {
 	const [error, setError] = useState<string | null>(null);
 	const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [isCancelling, setIsCancelling] = useState(false);
 
 	// Redirect if not admin
 	useEffect(() => {
@@ -52,14 +53,17 @@ export default function AdminEventsPage() {
 
 	const confirmCancel = async () => {
 		if (!selectedEvent) return;
+		setIsCancelling(true); // START spinner
+
 		try {
 			// await cancelEvent(selectedEvent.event_id);
 			await cancelEventUsingCompositeService(selectedEvent.event_id);
-			window.alert(`Event ID: ${selectedEvent.event_id} has been canceled`);
+			window.alert(`Event ID: ${selectedEvent.event_id} has been canceled successfully!`);
 			await fetchEvents();
 		} catch {
 			window.alert("Failed to cancel event. Please try again.");
 		} finally {
+			setIsCancelling(false); // STOP spinner
 			setIsModalOpen(false);
 			setSelectedEvent(null);
 		}
@@ -79,10 +83,9 @@ export default function AdminEventsPage() {
 				<h1 className="text-5xl font-bold">Manage Events</h1>
 				<p className="mt-4 text-xl">View, Edit, and Cancel Events</p>
 			</section>
-
 			<section className="py-16 bg-gray-50 max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 				{events.map((event) => {
-					const isCanceled = event.status === "cancelled";
+					const isCanceled = event.status === "Cancelled";
 					return (
 						<div key={event.event_id} className={`relative bg-white rounded-lg shadow-md flex flex-col ${isCanceled ? "opacity-50 grayscale" : ""}`}>
 							{isCanceled && (
@@ -102,7 +105,7 @@ export default function AdminEventsPage() {
 								<div className="mt-auto space-y-2">
 									<Link
 										href={`/admin/events/edit/${event.event_id}`}
-										className={`block text-center py-2 rounded ${isCanceled ? "bg-gray-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"} text-white`}
+										className={`block text-center py-2 rounded mt-3 ${isCanceled ? "bg-gray-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"} text-white`}
 										aria-disabled={isCanceled}
 									>
 										Edit
@@ -116,8 +119,16 @@ export default function AdminEventsPage() {
 					);
 				})}
 			</section>
-
-			{isModalOpen && selectedEvent && <ConfirmModal title="Cancel Event" message={`Are you sure you want to cancel "${selectedEvent.title}"? This action cannot be undone.`} onConfirm={confirmCancel} onCancel={() => setIsModalOpen(false)} />}
+			{isModalOpen && selectedEvent && (
+				<ConfirmModal
+					title="Cancel Event"
+					message={`Are you sure you want to cancel "${selectedEvent.title}"? This action cannot be undone.`}
+					onConfirm={confirmCancel}
+					onCancel={() => setIsModalOpen(false)}
+					confirmButtonContent={isCancelling ? <span className="animate-spin inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : undefined}
+					confirmDisabled={isCancelling}
+				/>
+			)}{" "}
 		</div>
 	);
 }
