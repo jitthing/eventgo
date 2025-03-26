@@ -105,7 +105,7 @@ public class BookingServiceImpl implements BookingService {
             String venue = eventData != null && eventData.get("venue") != null 
                     ? eventData.get("venue").toString() 
                     : "Madison Square Garden";
-                    
+
             String formattedDate = "September 20, 2025 (9:00 PM to 12:00 AM)";
             if (eventDateRaw != null) {
                 try {
@@ -126,8 +126,8 @@ public class BookingServiceImpl implements BookingService {
                     .block();
             log.info("Fetched user details: {}", userDetails);
     
-            String fullName = userDetails != null && userDetails.get("fullName") != null
-                    ? userDetails.get("fullName").toString()
+            String fullName = userDetails != null && userDetails.get("full_name") != null
+                    ? userDetails.get("full_name").toString()
                     : request.getUserEmail(); // Fallback to email if full name isn’t available
             log.info("Using full name: {}", fullName);
     
