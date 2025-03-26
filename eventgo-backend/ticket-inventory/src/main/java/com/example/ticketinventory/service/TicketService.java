@@ -213,31 +213,39 @@ public class TicketService {
     public Map<String, Object> cancelTicketsByEvent(Long eventId) {
         List<Ticket> tickets = ticketRepository.findByEventId(eventId);
         int canceledCount = 0;
-        List<String> paymentIds = new ArrayList<>();
-
+        List<Map<String, Object>> cancellations = new ArrayList<>();
+    
         for (Ticket ticket : tickets) {
             if (ticket.getStatus() == TicketStatus.sold) {
                 canceledCount++;
-                if (!paymentIds.contains(ticket.getPaymentIntentId())) {
-                    paymentIds.add(ticket.getPaymentIntentId());
-                }
+                Map<String, Object> record = new HashMap<>();
+                record.put("ticket_id", ticket.getTicketId());
+                record.put("event_id", ticket.getEventId());
+                record.put("seat_number", ticket.getSeatNumber());
+                record.put("user_id", ticket.getUserId());
+                record.put("payment_intent_id", ticket.getPaymentIntentId());
+                record.put("previous_status", ticket.getStatus().toString());
+                record.put("price", ticket.getPrice());
+                cancellations.add(record);
             }
             ticket.setStatus(TicketStatus.cancelled);
             ticket.setReservationExpires(null);
             ticket.setReservationId(null);
             ticket.setUserId(null);
-
         }
-
+    
         ticketRepository.saveAll(tickets);
-
+    
         Map<String, Object> response = new HashMap<>();
         response.put("status", "success");
-        response.put("message", String.format("Successfully canceled %d reserved tickets for event ID: %d", canceledCount, eventId));
-        response.put("paymentIds", paymentIds);
-        
+        response.put("message", String.format(
+            "Successfully canceled %d sold tickets for event ID: %d", canceledCount, eventId));
+        response.put("cancellations", cancellations);
+    
         return response;
     }
+
+
 
     // get tickets by user id
     public Map<String, Object> getTicketsByUserId(Long userId) {

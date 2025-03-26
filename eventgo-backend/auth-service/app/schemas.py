@@ -35,3 +35,15 @@ class TokenData(BaseModel):
 
 class TokenValidationRequest(BaseModel):
     token: str
+
+class UsersQueryRequest(BaseModel):
+    ids: list[int]
+
+class UsersQueryResponse(BaseModel):
+    id: int
+    email: EmailStr
+    full_name: str
+    role: RoleEnum
+
+    class Config:
+        from_attributes = True

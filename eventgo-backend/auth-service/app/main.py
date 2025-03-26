@@ -209,3 +209,11 @@ async def validate_token(
 @app.get("/debug-cookies")
 async def debug_cookies(request: Request):
     return {"cookies": request.cookies}
+
+@app.post("/users/query", response_model=list[schemas.UsersQueryResponse])
+async def get_users_by_ids(
+    payload: schemas.UsersQueryRequest,
+    db: Session = Depends(get_db),
+):
+    return db.query(models.User).filter(models.User.id.in_(payload.ids)).all()
+
