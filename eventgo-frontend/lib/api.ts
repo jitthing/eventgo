@@ -60,20 +60,19 @@ export async function getFeaturedEvents(): Promise<Event[]> {
 
   const data = await response.json();
 
-  // Ensure the API response structure is valid
   if (!data || !Array.isArray(data.EventAPI)) {
     throw new Error("Unexpected API response structure");
   }
 
-  return data.EventAPI.map((event: Event) => ({
-    ...event,
-    // Ensure image_url is a full URL
-    image_url: event.image_url.startsWith("http")
-      ? event.image_url
-      : `${EVENTS_API_URL}/events/${event.event_id}/image`,
-  }));
+  return data.EventAPI
+    .filter((event: Event) => event.status !== "Cancelled")
+    .map((event: Event) => ({
+      ...event,
+      image_url: event.image_url.startsWith("http")
+        ? event.image_url
+        : `${EVENTS_API_URL}/events/${event.event_id}/image`,
+    }));
 }
-
 /**
  * Fetch all tickets for a given event.
  */
