@@ -65,7 +65,12 @@ export default function ProfilePage() {
 					return acc;
 				}, {});
 
-				setGroupedTickets(Object.values(grouped));
+				const sorted = Object.values(grouped).sort((a, b) => {
+					const aCancelled = a.event?.status === "Cancelled";
+					const bCancelled = b.event?.status === "Cancelled";
+					return aCancelled === bCancelled ? 0 : aCancelled ? 1 : -1;
+				});
+				setGroupedTickets(sorted);
 			} catch (err) {
 				setError("Failed to load tickets.");
 			} finally {
@@ -191,13 +196,14 @@ export default function ProfilePage() {
 					groupedTickets.map((group: GroupedTickets) => (
 						<div key={group.event?.event_id || Math.random()} className="mb-8 border border-gray-200 rounded-lg overflow-hidden">
 							{/* Event Card Header */}
-							<div className="flex items-center bg-gray-100 p-4">
+							<div className={`flex items-center p-4 ${group.event?.status === "Cancelled" ? "bg-red-100" : "bg-gray-100"}`}>
 								{group.event?.image_url && <img src={group.event.image_url} alt={group.event.title} className="w-20 h-20 object-cover rounded mr-4" />}
 								<div>
-									<h3 className="text-xl font-semibold text-black">
+									<h3 className="text-xl font-semibold text-black flex items-center space-x-2">
 										<Link href={`/events/${group.event?.event_id}`}>
-											<span className="hover:text-blue-600">{group.event?.title || "Event"}</span>
+											<span className={group.event?.status === "Cancelled" ? "line-through text-gray-500" : "hover:text-blue-600"}>{group.event?.title}</span>
 										</Link>
+										{group.event?.status === "Cancelled" && <span className="text-red-600 font-semibold uppercase text-sm">Cancelled</span>}
 									</h3>
 									<p className="text-gray-600">{group.event?.venue}</p>
 									{group.event?.date && <p className="text-gray-600">{formatEventDuration(group.event.date)}</p>}{" "}
@@ -217,17 +223,12 @@ export default function ProfilePage() {
 										<p className="mt-1 text-black">Price: ${Number(ticket.price).toFixed(2)}</p>
 										<div className="mt-4">
 											<button
-												onClick={() =>
-													setTransferTicket({
-														ticketId: ticket.ticketId,
-														eventId: group.event.event_id,
-														eventTitle: group.event.title,
-														seatNumber: ticket.seatNumber,
-													})
-												}
-												className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors w-full"
+												disabled={group.event?.status === "Cancelled"}
+												className={`py-2 px-4 rounded w-full transition-colors ${
+													group.event?.status === "Cancelled" ? "bg-gray-200 cursor-not-allowed text-green-600 font-semibold" : "bg-blue-600 hover:bg-blue-700 text-white"
+												}`}
 											>
-												Transfer Ticket
+												{group.event?.status === "Cancelled" ? "Refunded" : "Transfer Ticket"}
 											</button>
 										</div>
 									</div>
