@@ -1,59 +1,395 @@
-docker compose down --volumes
+To stop all containers:
 
-docker compose up -d --build
+```bash
+    docker compose down --volumes
+```
 
-python seed_data.py
+To start containers:
+
+```bash
+    docker compose up -d --build
+```
+
+To generate mock data:
+
+```bash
+    python seed_data.py
+```
+
+To do all of the above:
+
+```bash
+    python restart_docker.py
+```
 
 Folder Structure:
 
 ```
-│   docker-compose.yml
-│   health_check.py
-│   readme.md
-│   restart_docker.py
-│   seed_data.py
-│
-├───auth-service
-│   │   .env
-│   │   .env.example
-│   │   Dockerfile
-│   │   requirements.txt
-│   │
-│   └───app
-│           database.py
-│           dependencies.py
-│           init_db.py
-│           main.py
-│           models.py
-│           schemas.py
-│           token_blacklist.py
-│           __init__.py
-│
-├───events-service
-│   │   .env
-│   │   .env.example
-│   │   Dockerfile
-│   │   requirements.txt
-│   │
-│   └───app
-│           database.py
-│           dependencies.py
-│           main.py
-│           models.py
-│           schemas.py
-│           __init__.py
-│
-└───tickets-service
-    │   .env
-    │   .env.example
-    │   Dockerfile
-    │   requirements.txt
-    │
-    └───app
-            database.py
-            dependencies.py
-            main.py
-            models.py
-            schemas.py
-            __init__.py
+└── 📁eventgo-backend
+    └── 📁.idea
+        └── .gitignore
+        └── compiler.xml
+        └── encodings.xml
+        └── eventgo-backend.iml
+        └── jarRepositories.xml
+        └── misc.xml
+        └── modules.xml
+        └── vcs.xml
+    └── 📁archive
+        └── 📁events-service
+            └── .env.example
+            └── 📁app
+                └── __init__.py
+                └── database.py
+                └── dependencies.py
+                └── main.py
+                └── models.py
+                └── schemas.py
+            └── Dockerfile
+            └── requirements.txt
+        └── 📁tickets-service
+            └── .env.example
+            └── 📁app
+                └── __init__.py
+                └── database.py
+                └── dependencies.py
+                └── main.py
+                └── models.py
+                └── schemas.py
+            └── Dockerfile
+            └── requirements.txt
+    └── 📁auth-service
+        └── .env
+        └── .env.example
+        └── 📁app
+            └── __init__.py
+            └── database.py
+            └── dependencies.py
+            └── init_db.py
+            └── main.py
+            └── models.py
+            └── schemas.py
+            └── token_blacklist.py
+        └── Dockerfile
+        └── readme.md
+        └── requirements.txt
+    └── 📁booking-service
+        └── .env
+        └── .env.example
+        └── .gitignore
+        └── 📁.run
+            └── BookingServiceApplication.run.xml
+        └── Dockerfile
+        └── 📁META-INF
+            └── MANIFEST.MF
+        └── pom.xml
+        └── 📁src
+            └── 📁main
+                └── 📁java
+                    └── 📁ticketBookingSystem
+                        └── BookingServiceApplication.java
+                        └── 📁config
+                            └── MinimalAuthFilter.java
+                            └── RabbitMQConfig.java
+                            └── SecurityConfig.java
+                        └── 📁controller
+                            └── BookingController.java
+                        └── 📁dto
+                            └── 📁Authentication
+                                └── AuthenticatedUserDTO.java
+                                └── TokenRequestDTO.java
+                            └── 📁Booking
+                                └── BookingDetailsResponseDTO.java
+                                └── CancelBookingResponseDTO.java
+                                └── ProcessBookingRequestDTO.java
+                                └── ProcessBookingResponseDTO.java
+                            └── EventDetails.java
+                            └── 📁notification
+                                └── NotificationDTO.java
+                                └── NotificationEvent.java
+                            └── 📁Payment
+                                └── PaymentRequestDTO.java
+                                └── PaymentResponseDTO.java
+                            └── 📁TicketsService
+                                └── TicketConfirmRequestDTO.java
+                                └── TicketConfirmResponseDTO.java
+                                └── TicketReserveRequestDTO.java
+                                └── TicketReserveResponseDTO.java
+                        └── 📁enums
+                            └── bookingStatus.java
+                        └── 📁service
+                            └── BookingService.java
+                            └── 📁impl
+                                └── BookingServiceImpl.java
+                            └── NotificationProducer.java
+                └── 📁resources
+                    └── application.properties
+                    └── application.properties.example
+            └── 📁test
+                └── 📁java
+                    └── 📁com
+                        └── 📁ticketBookingSystem
+                            └── AppTest.java
+        └── 📁target
+            └── 📁classes
+                └── application.properties
+                └── application.properties.example
+                └── 📁ticketBookingSystem
+                    └── BookingServiceApplication.class
+                    └── 📁config
+                        └── MinimalAuthFilter.class
+                        └── RabbitMQConfig.class
+                        └── SecurityConfig.class
+                    └── 📁controller
+                        └── BookingController.class
+                    └── 📁dto
+                        └── 📁Authentication
+                            └── AuthenticatedUserDTO.class
+                            └── TokenRequestDTO.class
+                        └── 📁Booking
+                            └── BookingDetailsResponseDTO.class
+                            └── CancelBookingResponseDTO.class
+                            └── ProcessBookingRequestDTO.class
+                            └── ProcessBookingResponseDTO.class
+                        └── EventDetails.class
+                        └── 📁notification
+                            └── NotificationDTO.class
+                            └── NotificationEvent.class
+                        └── 📁Payment
+                            └── PaymentRequestDTO.class
+                            └── PaymentResponseDTO.class
+                        └── 📁TicketsService
+                            └── TicketConfirmRequestDTO.class
+                            └── TicketConfirmResponseDTO.class
+                            └── TicketReserveRequestDTO.class
+                            └── TicketReserveResponseDTO.class
+                    └── 📁enums
+                        └── bookingStatus.class
+                    └── 📁service
+                        └── BookingService.class
+                        └── 📁impl
+                            └── BookingServiceImpl.class
+                        └── NotificationProducer.class
+            └── 📁generated-sources
+                └── 📁annotations
+            └── 📁generated-test-sources
+                └── 📁test-annotations
+            └── 📁test-classes
+                └── 📁com
+                    └── 📁ticketBookingSystem
+                        └── AppTest.class
+    └── 📁event-cancellation-service
+        └── .env
+        └── .env.example
+        └── 📁app
+            └── main.py
+            └── rabbitmq.py
+            └── requirements.txt
+        └── Dockerfile
+    └── 📁notification-service
+        └── .env
+        └── .env.example
+        └── .gitattributes
+        └── .gitignore
+        └── 📁.mvn
+            └── 📁wrapper
+                └── maven-wrapper.properties
+        └── Dockerfile
+        └── mvnw
+        └── mvnw.cmd
+        └── pom.xml
+        └── 📁src
+            └── 📁.run
+                └── NotificationServiceApplication.run.xml
+            └── 📁main
+                └── 📁java
+                    └── 📁com
+                        └── 📁event_go
+                            └── 📁notification_service
+                                └── 📁config
+                                    └── FlexibleMessageConverter.java
+                                    └── RabbitMQConfig.java
+                                    └── twilioConfig.java
+                                └── 📁dto
+                                    └── NotificationDTO.java
+                                └── 📁model
+                                    └── NotificationEvent.java
+                                └── NotificationServiceApplication.java
+                                └── 📁service
+                                    └── 📁impl
+                                        └── NotificationConsumerImpl.java
+                                        └── NotificationServiceImpl.java
+                                    └── NotificationConsumer.java
+                                    └── NotificationService.java
+                    └── 📁ticketBookingSystem
+                        └── 📁dto
+                            └── 📁notification
+                                └── NotificationDTO.java
+                └── 📁resources
+                    └── application.properties
+                    └── application.properties.example
+            └── 📁test
+                └── 📁java
+                    └── 📁com
+                        └── 📁event_go
+                            └── 📁notification_service
+                                └── NotificationServiceApplicationTests.java
+        └── 📁target
+            └── 📁classes
+                └── application.properties
+                └── application.properties.example
+                └── 📁com
+                    └── 📁event_go
+                        └── 📁notification_service
+                            └── 📁config
+                                └── FlexibleMessageConverter.class
+                                └── FlexibleMessageConverter$1.class
+                                └── RabbitMQConfig.class
+                                └── twilioConfig.class
+                            └── 📁dto
+                            └── 📁model
+                                └── NotificationEvent.class
+                            └── NotificationServiceApplication.class
+                            └── 📁service
+                                └── 📁impl
+                                    └── NotificationConsumerImpl.class
+                                    └── NotificationServiceImpl.class
+                                    └── NotificationServiceImpl$1.class
+                                └── NotificationConsumer.class
+                                └── NotificationService.class
+                └── 📁ticketBookingSystem
+                    └── 📁dto
+                        └── 📁notification
+                            └── NotificationDTO.class
+            └── 📁generated-sources
+                └── 📁annotations
+            └── 📁generated-test-sources
+                └── 📁test-annotations
+            └── 📁test-classes
+                └── 📁com
+                    └── 📁event_go
+                        └── 📁notification_service
+                            └── NotificationServiceApplicationTests.class
+    └── 📁party-booking-service
+        └── .env
+        └── .env.example
+        └── 📁app
+            └── main.py
+            └── schemas.py
+        └── Dockerfile
+        └── requirements.txt
+    └── 📁stripe-service
+        └── .env
+        └── .env.example
+        └── 📁app
+            └── __init__.py
+            └── 📁__pycache__
+                └── __init__.cpython-311.pyc
+                └── main.cpython-311.pyc
+                └── schemas.cpython-311.pyc
+            └── main.py
+            └── schemas.py
+        └── Dockerfile
+        └── requirements.txt
+        └── 📁tests
+            └── test_main.py
+    └── 📁ticket-inventory
+        └── 📁.mvn
+            └── 📁wrapper
+                └── maven-wrapper.properties
+        └── Dockerfile
+        └── mvnw
+        └── mvnw.cmd
+        └── pom.xml
+        └── 📁src
+            └── 📁main
+                └── 📁java
+                    └── 📁com
+                        └── 📁example
+                            └── 📁ticketinventory
+                                └── 📁config
+                                    └── CorsConfig.java
+                                └── 📁controller
+                                    └── TicketController.java
+                                └── 📁dto
+                                    └── ConfirmTicketRequest.java
+                                    └── ConfirmTicketSplitRequest.java
+                                    └── ReserveTicketRequest.java
+                                    └── ReserveTicketResponse.java
+                                    └── TicketResponse.java
+                                └── 📁model
+                                    └── Ticket.java
+                                    └── TicketCategory.java
+                                    └── TicketStatus.java
+                                └── 📁repository
+                                    └── TicketRepository.java
+                                └── 📁service
+                                    └── TicketService.java
+                                └── 📁swagger
+                                    └── SwaggerConfig.java
+                                └── TicketInventoryApplication.java
+                └── 📁resources
+                    └── application.properties
+                    └── application.properties.example
+            └── 📁test
+                └── 📁java
+                    └── 📁com
+                        └── 📁example
+                            └── 📁ticketinventory
+                                └── TicketInventoryApplicationTests.java
+        └── 📁target
+            └── 📁classes
+                └── application.properties
+                └── application.properties.example
+                └── 📁com
+                    └── 📁example
+                        └── 📁ticketinventory
+                            └── 📁config
+                                └── CorsConfig.class
+                                └── CorsConfig$1.class
+                            └── 📁controller
+                                └── TicketController.class
+                            └── 📁dto
+                                └── ConfirmTicketRequest.class
+                                └── ConfirmTicketSplitRequest.class
+                                └── ReserveTicketRequest.class
+                                └── ReserveTicketResponse.class
+                                └── TicketResponse.class
+                            └── 📁model
+                                └── Ticket.class
+                                └── TicketCategory.class
+                                └── TicketStatus.class
+                            └── 📁repository
+                                └── TicketRepository.class
+                            └── 📁service
+                                └── TicketService.class
+                            └── 📁swagger
+                                └── SwaggerConfig.class
+                            └── TicketInventoryApplication.class
+            └── 📁generated-sources
+                └── 📁annotations
+            └── 📁generated-test-sources
+                └── 📁test-annotations
+            └── 📁test-classes
+                └── 📁com
+                    └── 📁example
+                        └── 📁ticketinventory
+                            └── TicketInventoryApplicationTests.class
+    └── 📁ticket-transfer-service
+        └── .env
+        └── .env.example
+        └── 📁app
+            └── main.py
+            └── schemas.py
+        └── Dockerfile
+        └── requirements.txt
+    └── 📁tickets-service
+        └── .env
+    └── .DS_Store
+    └── docker-compose.yml
+    └── health_check.py
+    └── kong.yaml
+    └── readme.md
+    └── restart_docker.py
+    └── seed_data.py
 ```
