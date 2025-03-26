@@ -56,20 +56,18 @@ export default function ProfilePage() {
 				);
 
 				// Group tickets by eventId
-				const grouped = ticketsWithEvent.reduce((acc: any, ticket: any) => {
+				const grouped = ticketsWithEvent.reduce<Record<number, GroupedTickets>>((acc, ticket) => {
 					const key = ticket.eventId;
-					if (!acc[key]) {
-						acc[key] = { event: ticket.event, tickets: [] };
-					}
+					if (!acc[key]) acc[key] = { event: ticket.event, tickets: [] };
 					acc[key].tickets.push(ticket);
 					return acc;
 				}, {});
 
-				const sorted = Object.values(grouped).sort((a, b) => {
+				const sorted = Object.values(grouped).sort((a, b): number => {
 					const aCancelled = a.event?.status === "Cancelled";
 					const bCancelled = b.event?.status === "Cancelled";
 					return aCancelled === bCancelled ? 0 : aCancelled ? 1 : -1;
-				});
+				}) as GroupedTickets[];
 				setGroupedTickets(sorted);
 			} catch (err) {
 				setError("Failed to load tickets.");
