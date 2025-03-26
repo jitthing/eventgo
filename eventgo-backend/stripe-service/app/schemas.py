@@ -117,3 +117,4 @@ class CreatePaymentLinkRequest(BaseModel):
     redirect_url: str
     event_id: str = None
     seats: List[str] = None
+    metadata: object

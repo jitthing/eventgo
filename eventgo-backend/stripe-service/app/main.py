@@ -259,13 +259,9 @@ async def create_payment_link(request: schemas.CreatePaymentLinkRequest):
     Create a single payment link for a customer. Used for ticket transfer
     """
     try:
-        metadata = {
-            "event_id": request.event_id,
-            "description": request.description,
-        }
         
-        if request.seats:
-            metadata["seats"] = ",".join(request.seats)
+        # if request.seats:
+        #     metadata["seats"] = ",".join(request.seats)
         
         payment_link = await generate_payment_link(
             amount=request.amount,
@@ -273,7 +269,7 @@ async def create_payment_link(request: schemas.CreatePaymentLinkRequest):
             name=f"Payment for {request.description}",
             email=request.email,
             redirect_url=request.redirect_url,
-            metadata=metadata
+            metadata=request.metadata
         )
         
         return {

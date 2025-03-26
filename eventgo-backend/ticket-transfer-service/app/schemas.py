@@ -31,7 +31,7 @@ class TransferNotification(BaseModel):
     recipient_email_address: str 
 
 class TicketTransferRequest(BaseModel):
-    original_payment_intent: str
+    # original_payment_intent: str
     new_payment_intent: str
     ticket_id: str
     seller_id: str

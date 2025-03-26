@@ -133,32 +133,35 @@ async def stripe_webhook(request: Request):
         elif event.type == "checkout.session.completed":
             # Handle completed payments from payment links
             session = event.data.object
+            print("[DEBUG] IM HERE")
+            print(session.metadata)
 
             # If this is a ticket transfer checkout
             if session.metadata and "transfer_id" in session.metadata:
+                ticket_id = session.metadata.get("ticket_id")
+                seller_id = session.metadata.get("seller_id")
+                seller_email = session.metadata.get("seller_email")
+                buyer_email = session.metadata.get("buyer_email")
+                buyer_id = session.metadata.get("buyer_id")
+                amount_in_cents = session.metadata.get("amount_in_cents")
+                # original_payment_intent_id = session.metadata.get("original_payment_intent")
+
+                # Extract the new payment intent ID from the session
+                new_payment_intent_id = session.payment_intent
+
+                transfer_body = {
+                    # "original_payment_intent": original_payment_intent_id,
+                    "new_payment_intent": new_payment_intent_id,
+                    "ticket_id": ticket_id,
+                    "seller_id": seller_id,
+                    "seller_email": seller_email,
+                    "buyer_id": buyer_id,
+                    "buyer_email": buyer_email,
+                    "amount": amount_in_cents
+                }
+                print(f"[PROCESS] Transfer body is {transfer_body}")
                 try:
                     # transfer_id = session.metadata.get("transfer_id")
-                    ticket_id = session.metadata.get("ticket_id")
-                    seller_id = session.metadata.get("seller_id")
-                    seller_email = session.metadata.get("seller_email")
-                    buyer_email = session.metadata.get("buyer_email")
-                    buyer_id = session.metadata.get("buyer_id")
-                    amount_in_cents = session.metadata.get("amount_in_cents")
-                    original_payment_intent_id = session.metadata.get("original_payment_intent")
-
-                    # Extract the new payment intent ID from the session
-                    new_payment_intent_id = session.payment_intent
-
-                    transfer_body = {
-                        "original_payment_intent": original_payment_intent_id,
-                        "new_payment_intent": new_payment_intent_id,
-                        "ticket_id": ticket_id,
-                        "seller_id": seller_id,
-                        "seller_email": seller_email,
-                        "buyer_id": buyer_id,
-                        "buyer_email": buyer_email,
-                        "amount": amount_in_cents
-                    }
                     print(f"[CALL] Calling {TICKET_TRANSFER_URL} to transfer tickets with {transfer_body}")
                     ticket_transfer = requests.post(
                         f"{TICKET_TRANSFER_URL}/transfer",
@@ -192,7 +195,8 @@ async def stripe_webhook(request: Request):
                 ticket_confirm_req = {
                     "paymentIntentId": payment_intent_id,
                     "reservationId": reservation_id,
-                    "userId": user_id
+                    "userId": user_id,
+                    "ticketId": ticket_id
                 }
 
                 print(ticket_confirm_req)
