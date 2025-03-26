@@ -217,3 +217,13 @@ async def get_users_by_ids(
 ):
     return db.query(models.User).filter(models.User.id.in_(payload.ids)).all()
 
+
+@app.get("/users/{user_id}", response_model=schemas.UserResponse)
+async def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
+    """
+    Retrieve user details by user ID.
+    """
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user

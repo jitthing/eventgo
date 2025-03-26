@@ -114,14 +114,3 @@ class User(Base):
 ### Running All Services
 
 You can do `python restart_docker.py` in the `eventgo-backend` folder (just remember to rename the `.env.example` into `.env` for every services, i.e. go to auth folder, copy and then rename the `.env.example` to `.env`)
-
-### Main Problem I'm Facing
-
--   Unauthorized 401 error
-
-    -   basically, everytime i try to login/register, I get a glimpse of profile page before being redirected back to login page.
-    -   this is because i'm not authorized to access profile page
-    -   this means thrs probably some logic error causing issues for the JWT (authentication token) to be passed between frontend and backend.
-    -   dw to lead you the wrong way, but when i tried `curl` command, my auth endpoint all seems to work okay... so might be the connection between backend and frontend(?)
-
--   The main logic for auth in the frontend is in `eventgo-frontend/lib/auth.ts` and the respective pages: `eventgo-frontend/app/login/page.tsx`, `eventgo-frontend/app/register/page.tsx`, `eventgo-frontend/app/profile/page.tsx`
