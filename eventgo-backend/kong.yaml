@@ -61,3 +61,12 @@ services:
         paths:
           - /events
         strip_path: true
+
+
+  - name: ticket-transfer-service
+    url: http://host.docker.internal:8011
+    routes:
+      - name: ticket-transfer-route
+        paths:
+          - /transfer
+        strip_path: true
