@@ -231,7 +231,6 @@ public class TicketService {
             ticket.setStatus(TicketStatus.cancelled);
             ticket.setReservationExpires(null);
             ticket.setReservationId(null);
-            ticket.setUserId(null);
         }
     
         ticketRepository.saveAll(tickets);
