@@ -5,7 +5,7 @@ import {
 
 const EVENTS_API_URL = process.env.NEXT_PUBLIC_EVENTS_API_URL || 'https://personal-vyyhsf3d.outsystemscloud.com/EventsOutsystem/rest/EventsAPI';
 const TICKETS_API_URL = process.env.NEXT_PUBLIC_TICKETS_API_URL || 'http://localhost:8005';
-
+const EVENT_CANCELLATION_COMPOSITE_SERVICE_API_URL = process.env.NEXT_PUBLIC_EVENT_CANCELLATION_COMPOSITE_SERVICE_API_URL;
 /**
  * Fetch an event by event ID.
  */
@@ -126,6 +126,21 @@ export async function confirmPurchase(payment_intent_id: string, reservation_id:
   }
   return response.json();
 }
+
+/**
+ * Cancel an event via Composite Service
+ */
+export async function cancelEventUsingCompositeService(event_id: number): Promise<{ status: string; message: string }> {
+  const response = await fetch(`${EVENT_CANCELLATION_COMPOSITE_SERVICE_API_URL}/cancel-event/${event_id}`, {
+    method: 'PATCH',
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to cancel event via composite service');
+  }
+  return response.json();
+}
+
 
 /**
  * Cancel all reserved (unpaid) tickets for an event.

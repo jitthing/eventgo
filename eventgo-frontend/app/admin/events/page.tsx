@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getAllEvents, cancelEvent } from "@/lib/api";
+import { getAllEvents, cancelEvent, cancelEventUsingCompositeService } from "@/lib/api";
 import Image from "next/image";
 import Link from "next/link";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -53,7 +53,8 @@ export default function AdminEventsPage() {
 	const confirmCancel = async () => {
 		if (!selectedEvent) return;
 		try {
-			await cancelEvent(selectedEvent.event_id);
+			// await cancelEvent(selectedEvent.event_id);
+			await cancelEventUsingCompositeService(selectedEvent.event_id);
 			window.alert(`Event ID: ${selectedEvent.event_id} has been canceled`);
 			await fetchEvents();
 		} catch {
