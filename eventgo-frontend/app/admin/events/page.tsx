@@ -89,8 +89,9 @@ export default function AdminEventsPage() {
 					return (
 						<div key={event.event_id} className={`relative bg-white rounded-lg shadow-md flex flex-col ${isCanceled ? "opacity-50 grayscale" : ""}`}>
 							{isCanceled && (
-								<div className="absolute inset-0 bg-gray-400 bg-opacity-50 flex items-center justify-center">
-									<p className="text-white font-bold">CANCELED</p>
+								<div className="absolute inset-0 flex items-center justify-center">
+									<div className="absolute inset-0 bg-gray-400 bg-opacity-50" />
+									<p className="relative z-10 text-red-600 font-bold text-xl filter-none">CANCELED</p>
 								</div>
 							)}
 							<div className="relative h-48">
