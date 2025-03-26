@@ -4,6 +4,7 @@ server.port=8000
 tickets.inventory.url=${TICKETS_INVENTORY_URL}
 stripe.service.url=${STRIPE_SERVICE_URL}
 auth.service.url=${AUTH_SERVICE_URL}
+events.api.url=${EVENTS_API_URL}
 
 # RabbitMQ Configuration
 spring.rabbitmq.host=${SPRING_RABBITMQ_HOST}

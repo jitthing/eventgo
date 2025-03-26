@@ -26,6 +26,12 @@ public class BookingServiceImpl implements BookingService {
     @Value("${stripe.service.url}")
     private String stripeServiceUrl;
 
+    @Value("${events.api.url}")
+    private String eventsApiUrl;
+
+    @Value("${auth.service.url}")
+    private String authServiceUrl;
+
     private final WebClient webClient;
     private final NotificationProducer notificationProducer;
 
@@ -77,58 +83,101 @@ public class BookingServiceImpl implements BookingService {
 
     private void sendBookingConfirmationEmail(ProcessBookingRequestDTO request) {
         try {
-            log.info("Starting to prepare email notification for booking: eventId={}, seats={}, userEmail={}", 
-                    request.getEventId(), request.getSeats(), request.getUserEmail());
+            log.info("Starting to prepare email notification for booking: eventId={}, seats={}, userEmail={}",
+                     request.getEventId(), request.getSeats(), request.getUserEmail());
+    
+            // 1. Fetch Event Details from the Event Service
+            Map<String, Object> eventDetails = webClient.get()
+                    .uri(eventsApiUrl + "/events/" + request.getEventId())
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+            log.info("Fetched event details: {}", eventDetails);
 
+            Map<String, Object> eventData = eventDetails != null ? (Map<String, Object>) eventDetails.get("EventAPI") : null;
+
+            String eventTitle = eventData != null && eventData.get("title") != null 
+                    ? eventData.get("title").toString() 
+                    : "NBA Finals Game";
+            String eventDateRaw = eventData != null && eventData.get("date") != null 
+                    ? eventData.get("date").toString() 
+                    : "2025-09-20T13:00:00Z";
+            String venue = eventData != null && eventData.get("venue") != null 
+                    ? eventData.get("venue").toString() 
+                    : "Madison Square Garden";
+                    
+            String formattedDate = "September 20, 2025 (9:00 PM to 12:00 AM)";
+            if (eventDateRaw != null) {
+                try {
+                    java.time.ZonedDateTime zdt = java.time.ZonedDateTime.parse(eventDateRaw);
+                    formattedDate = zdt.format(java.time.format.DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a"));
+                } catch (Exception ex) {
+                    log.warn("Failed to parse event date: {}", eventDateRaw);
+                }
+            }
+
+            log.info("Event details processed: title={}, date={}, venue={}", eventTitle, formattedDate, venue);
+    
+            // 2. Fetch User Details from the Auth Service to get full name (if not already provided)
+            Map<String, Object> userDetails = webClient.get()
+                    .uri(authServiceUrl + "/users/" + request.getUserId())
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+            log.info("Fetched user details: {}", userDetails);
+    
+            String fullName = userDetails != null && userDetails.get("fullName") != null
+                    ? userDetails.get("fullName").toString()
+                    : request.getUserEmail(); // Fallback to email if full name isn’t available
+            log.info("Using full name: {}", fullName);
+    
+            // 3. Use the total amount provided by the front end
+            double amount = request.getTotalAmount();
+            log.info("Total amount received: {}", amount);
+    
+            // 4. Compose the comprehensive confirmation message
+            String seats = String.join(", ", request.getSeats());
+            String message = String.format(
+                "Hello %s,%n%n" +
+                "Thank you for booking with EventGo! Your reservation has been confirmed.%n%n" +
+                "Booking Details%n" +
+                "📅 %s%n" +
+                "📍 %s%n" +
+                "🎟 Seats: %s%n" +
+                "💳 Payment ID: %s%n%n" +
+                "Total Amount Paid: $%.2f%n%n" +
+                "Your tickets are now ready — no further action is needed. We look forward to seeing you at the event!%n%n" +
+                "If you have any questions or need assistance, visit our Help Center at https://help.eventgo.com or reply directly to this email.%n%n" +
+                "Sincerely,%n" +
+                "EventGo Customer Support",
+                fullName, formattedDate, venue, seats, request.getPaymentIntentId(), amount
+            );
+            log.info("Composed email message: {}", message);
+    
+            // 5. Prepare and send the notification
             NotificationDTO notification = new NotificationDTO();
             notification.setNotificationId(UUID.randomUUID());
             notification.setTimestamp(new Date());
-            notification.setSubject("Booking Confirmation - Event " + request.getEventId());
-            
-            // Create a detailed message
-            String message = String.format(
-                "Thank you for your booking!\n\n" +
-                "Booking Details:\n" +
-                "Event ID: %s\n" +
-                "Seats: %s\n" +
-                "Payment ID: %s\n\n" +
-                "Your tickets have been confirmed. Enjoy the event!",
-                request.getEventId(),
-                String.join(", ", request.getSeats()),
-                request.getPaymentIntentId()
-            );
-            
+            notification.setSubject("Booking Confirmation - " + eventTitle);
             notification.setMessage(message);
-            
-            // Get user email from request or use fallback
-            String userEmail = request.getUserEmail();
-            log.info("User email from request: {}", userEmail);
-            
-            if (userEmail == null || userEmail.isEmpty()) {
-                // Fall back to getting email from auth service if not provided
-                log.info("Email from request is null or empty, trying to get from auth service with userId: {}", request.getUserId());
-                userEmail = getUserEmail(request.getUserId());
-                log.info("Email returned from auth service: {}", userEmail);
-                
-                // If still null, use default for testing
-                if (userEmail == null || userEmail.isEmpty()) {
-                    userEmail = "taneeherng@gmail.com"; // Default for testing
-                    log.warn("Using default email for testing: {}", userEmail);
-                }
+    
+            // Ensure recipient email is valid: if not, try to get it via another lookup
+            String recipientEmail = request.getUserEmail();
+            if (recipientEmail == null || recipientEmail.isEmpty()) {
+                recipientEmail = getUserEmail(request.getUserId());
+                log.warn("User email not provided in request, fallback email: {}", recipientEmail);
+            } else {
+                log.info("Using recipient email from request: {}", recipientEmail);
             }
-            
-            notification.setRecipientEmailAddress(userEmail);
-            
-            log.info("Sending booking confirmation email to: {}", userEmail);
-            
+            notification.setRecipientEmailAddress(recipientEmail);
+    
             notificationProducer.sendNotification(notification);
-            log.info("Successfully published notification to RabbitMQ queue");
-            
+            log.info("Successfully published comprehensive booking confirmation.");
         } catch (Exception e) {
-            log.error("Failed to send booking confirmation email. Error details: ", e);
-            // Don't throw the exception - we don't want to fail the booking if email fails
+            log.error("Failed to send booking confirmation email. Error: ", e);
         }
     }
+    
 
     private String getUserEmail(String userId) {
         try {

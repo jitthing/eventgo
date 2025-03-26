@@ -23,5 +23,6 @@ public class ProcessBookingRequestDTO {
     private String reservationId; // Add this to match the ticket inventory service
     private String userId;        // Add this to match the ticket inventory service
     private String userEmail;     // User's email address for notifications
+    private float totalAmount;
 
 }
