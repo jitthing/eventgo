@@ -196,28 +196,28 @@ services:
             timeout: 5s
             retries: 3
 
-  # --------------------------------------------------------------------------
-  # TICKET TRANSFER SERVICE
-  # --------------------------------------------------------------------------
-  ticket-transfer-service:
-    build: ./ticket-transfer-service
-    ports:
-      - "8011:8000"
-    env_file:
-      - ./ticket-transfer-service/.env
-    networks:
-      - app_network
-    depends_on:
-      - stripe-service
-      - ticket-inventory
-      - rabbitmq
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    # --------------------------------------------------------------------------
+    # TICKET TRANSFER SERVICE
+    # --------------------------------------------------------------------------
+    ticket-transfer-service:
+        build: ./ticket-transfer-service
+        ports:
+            - "8011:8000"
+        env_file:
+            - ./ticket-transfer-service/.env
+        networks:
+            - app_network
+        depends_on:
+            - stripe-service
+            - ticket-inventory
+            - rabbitmq
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
 
-     # --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # EVENT CANCELLATION SERVICE
     # --------------------------------------------------------------------------
     event-cancellation-service:
@@ -247,8 +247,8 @@ services:
         restart: always
 
     # --------------------------------------------------------------------------
-      # KONG API GATEWAY
-      # --------------------------------------------------------------------------
+    # KONG API GATEWAY
+    # --------------------------------------------------------------------------
     kong:
         image: kong:latest
         container_name: kong
@@ -271,7 +271,7 @@ services:
             - party-booking-service
             - stripe-service
             - ticket-inventory
-        - ticket-transfer-service
+            - ticket-transfer-service
 volumes:
     auth-db-data:
     ticket-inventory-data:
