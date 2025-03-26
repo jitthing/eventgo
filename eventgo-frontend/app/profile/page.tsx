@@ -9,6 +9,8 @@ import { useAuth } from "@/context/AuthContext";
 import { formatEventDuration } from "@/lib/utils";
 import TransferModal from "@/components/TransferModal";
 import ProfileSkeleton from "@/components/ProfileSkeleton";
+import QRCode from "react-qr-code";
+
 interface GroupedTickets {
 	event: any;
 	tickets: any[];
@@ -26,6 +28,7 @@ export default function ProfilePage() {
 	} | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [qrTicketId, setQrTicketId] = useState<number | null>(null);
 
 	useEffect(() => {
 		async function fetchData() {
@@ -213,6 +216,9 @@ export default function ProfilePage() {
 									<div key={ticket.ticketId} className="p-4 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
 										<div className="flex justify-between items-center">
 											<p className="text-black font-medium">Seat: {ticket.seatNumber}</p>
+											<div onClick={() => setQrTicketId(ticket.ticketId)} className="cursor-pointer">
+												<QRCode value={`ticket-${ticket.ticketId}`} size={50} />
+											</div>
 											{/* <span className={`text-sm font-medium ${ticket.status === "sold" ? "text-green-600" : ticket.status === "reserved" ? "text-yellow-600" : "text-gray-600"}`}>
 												{ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
 											</span> */}
@@ -237,6 +243,18 @@ export default function ProfilePage() {
 							)}{" "}
 						</div>
 					))
+				)}
+
+				{qrTicketId && (
+					<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+						<div className="bg-white p-8 rounded-lg relative">
+							<button onClick={() => setQrTicketId(null)} className="absolute top-2 right-2 text-red-600 font-bold">
+								X
+							</button>
+							<h2 className="text-xl text-black font-semibold mb-4">Your Ticket QR Code</h2>
+							<QRCode value={`ticket-${qrTicketId}`} size={200} />
+						</div>
+					</div>
 				)}
 
 				{/* Logout Section */}
