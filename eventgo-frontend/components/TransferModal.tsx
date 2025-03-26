@@ -4,7 +4,7 @@ import { useState } from "react";
 import { searchUsers } from "@/lib/auth";
 import { useAuth } from "@/context/AuthContext";
 
-const TICKET_TRANSFER_URL = process.env.NEXT_PUBLIC_TICKET_TRANSFER_APU_URL;
+const TICKET_TRANSFER_URL = process.env.NEXT_PUBLIC_TICKET_TRANSFER_API_URL;
 
 interface TransferModalProps {
   ticketId: number;
