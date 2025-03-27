@@ -316,7 +316,10 @@ async def create_split_payment(request: schemas.CreateSplitPaymentRequest):
             
             # Ensure we have participant_email in the result
             payment_link["participant_email"] = participant.email
+            payment_link["user_id"] = participant.user_id
+            payment_link["ticket_id"] = participant.ticket_id
             
+
             payment_links.append(payment_link)
         
         # # Store the split payment info (in production, use a database)

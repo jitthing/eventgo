@@ -80,9 +80,11 @@ class PaymentLinkResponse(BaseModel):
 class SplitPaymentLinkResponse(BaseModel):
     payment_link_id: str
     url: str
+    user_id: int
     participant_email: str  # This field is needed for split payments
     amount: int
     expires_at: int
+    ticket_id: int
 
 class SplitPaymentResponse(BaseModel):
     split_payment_id: str
