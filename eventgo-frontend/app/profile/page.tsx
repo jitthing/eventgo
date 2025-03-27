@@ -195,7 +195,7 @@ export default function ProfilePage() {
 					<p className="text-black">You have no tickets.</p>
 				) : (
 					groupedTickets.map((group: GroupedTickets) => (
-						<div key={group.event?.event_id || Math.random()} className="mb-8 border border-gray-200 rounded-lg overflow-hidden">
+						<div key={group.event?.event_id ?? group.tickets[0].eventId} className="mb-8 border border-gray-200 rounded-lg overflow-hidden">
 							{/* Event Card Header */}
 							<div className={`flex items-center p-4 ${group.event?.status === "Cancelled" ? "bg-red-100" : "bg-gray-100"}`}>
 								{group.event?.image_url && <img src={group.event.image_url} alt={group.event.title} className="w-20 h-20 object-cover rounded mr-4" />}
@@ -228,6 +228,14 @@ export default function ProfilePage() {
 										<div className="mt-4">
 											<button
 												disabled={group.event?.status === "Cancelled"}
+												onClick={() =>
+													setTransferTicket({
+														ticketId: ticket.ticketId,
+														eventId: group.event.event_id,
+														eventTitle: group.event.title,
+														seatNumber: ticket.seatNumber,
+													})
+												}
 												className={`py-2 px-4 rounded w-full transition-colors ${
 													group.event?.status === "Cancelled" ? "bg-gray-200 cursor-not-allowed text-green-600 font-semibold" : "bg-blue-600 hover:bg-blue-700 text-white"
 												}`}
