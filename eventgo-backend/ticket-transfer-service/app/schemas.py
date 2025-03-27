@@ -39,6 +39,7 @@ class TicketTransferRequest(BaseModel):
     buyer_email: str
     buyer_id: str
     amount: Union[float, int]
+    event_id: Union[str, int]
 
 class TicketTransferResponse(BaseModel):
     status: str

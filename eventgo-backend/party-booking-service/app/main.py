@@ -156,8 +156,8 @@ async def stripe_webhook(request: Request):
         elif event.type == "checkout.session.completed":
             # Handle completed payments from payment links
             session = event.data.object
-            print("[DEBUG] IM HERE")
-            print(session.metadata)
+            # print("[DEBUG] IM HERE")
+            # print(session.metadata)
 
             # If this is a ticket transfer checkout
             if session.metadata and "transfer_id" in session.metadata:
@@ -167,6 +167,7 @@ async def stripe_webhook(request: Request):
                 buyer_email = session.metadata.get("buyer_email")
                 buyer_id = session.metadata.get("buyer_id")
                 amount_in_cents = session.metadata.get("amount_in_cents")
+                event_id = session.metadata.get("event_id")
                 # original_payment_intent_id = session.metadata.get("original_payment_intent")
 
                 # Extract the new payment intent ID from the session
@@ -180,9 +181,10 @@ async def stripe_webhook(request: Request):
                     "seller_email": seller_email,
                     "buyer_id": buyer_id,
                     "buyer_email": buyer_email,
-                    "amount": amount_in_cents
+                    "amount": amount_in_cents,
+                    "event_id": event_id
                 }
-                print(f"[PROCESS] Transfer body is {transfer_body}")
+                # print(f"[PROCESS] Transfer body is {transfer_body}")
                 try:
                     # transfer_id = session.metadata.get("transfer_id")
                     print(f"[CALL] Calling {TICKET_TRANSFER_URL} to transfer tickets with {transfer_body}")

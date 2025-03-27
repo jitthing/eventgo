@@ -106,6 +106,7 @@ async def generate_transfer_payment_link(request: schemas.TransferPaymentRequest
         
         # Get the ticket price from ticket inventory
         ticket_price = ticket_info.get("price")
+        event_id = ticket_info.get("event_id")
         # original_payment_intent = ticket_info.get("payment_intent_id")
         if not ticket_price:
             raise HTTPException(
@@ -122,7 +123,7 @@ async def generate_transfer_payment_link(request: schemas.TransferPaymentRequest
             "description": request.description or f"Ticket Transfer - Ticket #{request.ticket_id}",
             "email": request.buyer_email,
             "redirect_url": request.redirect_url + str(ticket_price),
-            "event_id": str(request.ticket_id),
+            "event_id": str(event_id),
             "metadata": {
                 "transfer_id": transfer_id,
                 "ticket_id": str(request.ticket_id),
@@ -130,7 +131,8 @@ async def generate_transfer_payment_link(request: schemas.TransferPaymentRequest
                 "seller_email": request.seller_email,
                 "buyer_email": request.buyer_email,
                 "buyer_id": str(request.buyer_id),
-                "amount_in_cents": amount_in_cents
+                "amount_in_cents": amount_in_cents,
+                "event_id": event_id
                 # "original_payment_intent": original_payment_intent
             }
         }
@@ -165,11 +167,15 @@ async def generate_transfer_payment_link(request: schemas.TransferPaymentRequest
         ticket_resp.raise_for_status()
         ticket = ticket_resp.json()
 
-        event_resp = requests.get(f"{EVENTS_URL}/events/{ticket['event_id']}")
+        # print(ticket["event_id"])
+
+        event_resp = requests.get(f"{EVENTS_URL}/events/{ticket.get('event_id')}")
         event_resp.raise_for_status()
         event = event_resp.json().get("EventAPI", {})
 
-        formatted_date = datetime.fromisoformat(event["date"].replace("Z", "+00:00")).strftime("%B %d, %Y at %I:%M %p")
+        print(event["date"])
+
+        formatted_date = datetime.fromisoformat(event.get("date").replace("Z", "+00:00")).strftime("%B %d, %Y at %I:%M %p")
 
         subject = f"Important Notice: Ticket Transfer Payment Link for '{event['title']}'"
         message = (
@@ -268,7 +274,7 @@ async def transfer(request: schemas.TicketTransferRequest):
         
         # 3. Send notifications directly using RabbitMQ
         # Fetch event details
-        event_resp = requests.get(f"{EVENTS_URL}/events/{request.ticket_id}")
+        event_resp = requests.get(f"{EVENTS_URL}/events/{request.event_id}")
         event_resp.raise_for_status()
         event = event_resp.json().get("EventAPI", {})
 
