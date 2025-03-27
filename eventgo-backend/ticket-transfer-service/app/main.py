@@ -179,9 +179,9 @@ async def generate_transfer_payment_link(request: schemas.TransferPaymentRequest
             f"{response_data['url']}\n\n"
             f"The ticket price is SGD {response_data['amount']/100:.2f}. This link will expire on "
             f"{datetime.fromtimestamp(response_data['expires_at']).strftime('%B %d, %Y at %I:%M %p')}.\n\n"
-            "If you have any questions, please visit our Help Center or reply to this email.\n\n"
-            "Thank you for choosing EventGo.\n\n"
-            "Sincerely,\nEventGo Customer Support"
+            f"If you have any questions, visit our Help Center at https://help.eventgo.com or reply to this email.\n\n"
+            f"Thank you for choosing EventGo.\n\n"
+            f"Sincerely,\nEventGo Customer Support"
         )
 
         publish_notification(schemas.TransferNotification(
@@ -289,9 +289,9 @@ async def transfer(request: schemas.TicketTransferRequest):
             f"We’re pleased to inform you that your transfer for ticket #{request.ticket_id} to '{event.get('title')}' "
             f"scheduled for {formatted_date} at {event.get('venue')} has been completed successfully. "
             f"Your new ticket ({seat_number}) is now in your account—no further action is needed.\n\n"
-            "If you have any questions, please visit our Help Center or reply to this email.\n\n"
-            "Thank you for choosing EventGo.\n\n"
-            "Sincerely,\nEventGo Customer Support"
+            f"If you have any questions, visit our Help Center at https://help.eventgo.com or reply to this email.\n\n"
+            f"Thank you for choosing EventGo.\n\n"
+            f"Sincerely,\nEventGo Customer Support"
         )
         publish_notification(schemas.TransferNotification(subject=subject, message=message, recipient_email_address=buyer["email"]))
 
@@ -304,8 +304,8 @@ async def transfer(request: schemas.TicketTransferRequest):
             f"{formatted_date} at {event.get('venue')} has been transferred successfully. A refund of SGD {request.amount:.2f} "
             f"will be processed to your original payment method shortly.\n\n"
             f"If you have any questions, visit our Help Center at https://help.eventgo.com or reply to this email.\n\n"
-            "Thank you for using EventGo.\n\n"
-            "Sincerely,\nEventGo Customer Support"
+            f"Thank you for using EventGo.\n\n"
+            f"Sincerely,\nEventGo Customer Support"
         )
         publish_notification(schemas.TransferNotification(subject=subject, message=message, recipient_email_address=seller["email"]))
 
