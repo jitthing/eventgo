@@ -290,11 +290,11 @@ export default function PaymentPage(): JSX.Element {
 					)}
 				</div>
 
-				{/* Back to Checkout */}
+				{/* Back to Event Page */}
 				<div className="mt-4 text-center">
-					<Link href="/checkout" className="text-blue-600 hover:text-blue-800 font-medium">
-						← Back to Checkout
-					</Link>
+					<button onClick={() => router.back()} className="text-blue-600 hover:text-blue-800 font-medium">
+						← Back to Event Page
+					</button>
 				</div>
 			</div>
 		</div>
