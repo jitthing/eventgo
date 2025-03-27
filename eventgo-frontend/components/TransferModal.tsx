@@ -57,7 +57,7 @@ export default function TransferModal({
       buyer_id: recipient.id,
       seller_email: user.email,
       buyer_email: recipient.email,
-      redirect_url: "http://localhost:3000",
+      redirect_url: `http://localhost:3000/confirmation?eventId=${eventId}&seats=${seatNumber}&total=`,
     };
     const transfer = await fetch(
       `${TICKET_TRANSFER_URL}/generate-transfer-payment-link`,

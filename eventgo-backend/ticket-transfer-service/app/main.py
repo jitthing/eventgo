@@ -119,7 +119,7 @@ async def generate_transfer_payment_link(request: schemas.TransferPaymentRequest
             "currency": "sgd",
             "description": request.description or f"Ticket Transfer - Ticket #{request.ticket_id}",
             "email": request.buyer_email,
-            "redirect_url": request.redirect_url,
+            "redirect_url": request.redirect_url + str(ticket_price),
             "event_id": str(request.ticket_id),
             "metadata": {
                 "transfer_id": transfer_id,

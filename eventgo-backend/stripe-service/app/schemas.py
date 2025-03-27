@@ -61,6 +61,7 @@ class SplitPaymentParticipant(BaseModel):
     user_id: int
     ticket_id: int
     amount: int
+    redirect_url: str
 
 class CreateSplitPaymentRequest(BaseModel):
     event_id: int
@@ -68,7 +69,6 @@ class CreateSplitPaymentRequest(BaseModel):
     reservation_id: int
     participants: list[SplitPaymentParticipant]
     description: str
-    redirect_url: str
 
 class PaymentLinkResponse(BaseModel):
     payment_link_id: str

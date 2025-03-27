@@ -310,7 +310,7 @@ async def create_split_payment(request: schemas.CreateSplitPaymentRequest):
                 currency=request.currency,
                 name=f"Split payment for {request.description} - {participant.email}",
                 email=participant.email,
-                redirect_url=request.redirect_url,
+                redirect_url=participant.redirect_url,
                 metadata=metadata
             )
             

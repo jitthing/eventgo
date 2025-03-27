@@ -293,9 +293,9 @@ async def party_booking(request: schemas.PartyBookingRequest):
     for item in request.items:
         if ";" in item.user_email:
             leader = item.user_email[:-1]
-            participants.append({"email": leader, "user_id": item.user_id, "amount": item.price, "ticket_id": item.ticket_id})
+            participants.append({"email": leader, "user_id": item.user_id, "amount": item.price, "ticket_id": item.ticket_id, "redirect_url": f"http://localhost:3000/confirmation?eventId={event_id}&seats=A{item.ticket_id}&total={item.price/100:.2f}"})
         else:
-            participants.append({"email": item.user_email, "user_id": item.user_id, "amount": item.price, "ticket_id": item.ticket_id})
+            participants.append({"email": item.user_email, "user_id": item.user_id, "amount": item.price, "ticket_id": item.ticket_id, "redirect_url": f"http://localhost:3000/confirmation?eventId={event_id}&seats=A{item.ticket_id}&total={item.price/100:.2f}"})
     
     split_payments_req = {
         "event_id": event_id,
@@ -303,7 +303,7 @@ async def party_booking(request: schemas.PartyBookingRequest):
         "currency": "sgd",
         "participants": participants,
         "description": event_title + '\n' + event_description,
-        "redirect_url": "http://localhost:3000"
+        # "redirect_url": "http://localhost:3000/confirmation?"
         }
     try:
         # Use the Docker service name and port instead of localhost
