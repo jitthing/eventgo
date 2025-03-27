@@ -32,6 +32,8 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 STRIPE_SERVICE_URL = os.environ.get("STRIPE_SERVICE_URL")
 TICKET_INVENTORY_URL = os.environ.get("TICKET_INVENTORY_URL")
 TICKET_TRANSFER_URL = os.environ.get("TICKET_TRANSFER_URL")
+AUTH_URL   = os.getenv("AUTH_API_URL", "http://auth-service:8000")
+EVENTS_URL = os.getenv("EVENTS_API_URL", "https://personal-vyyhsf3d.outsystemscloud.com/EventsOutsystem/rest/EventsAPI")
 
 # RabbitMQ Configuration
 RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "rabbitmq")
@@ -78,6 +80,27 @@ def publish_message(message, routing_key=NOTIFICATION_ROUTING_KEY):
     except Exception as e:
         print(f"Failed to publish message: {str(e)}")
         return False
+
+
+
+def send_payment_notification(user_id: int, event_id: int, ticket_id: int, amount_cents: int, url: str, subject_prefix: str):
+    user = requests.get(f"{AUTH_URL}/users/{user_id}").json()
+    event = requests.get(f"{EVENTS_URL}/events/{event_id}").json().get("EventAPI", {})
+
+    formatted_date = datetime.fromisoformat(event["date"].replace("Z","+00:00")).strftime("%B %d, %Y at %I:%M %p")
+    subject = f"{subject_prefix}: '{event['title']}'"
+    message = (
+        f"Hello {user['full_name']},\n\n"
+        f"You’re invited to '{event['title']}' on {formatted_date} at {event['venue']}. "
+        f"Please complete your payment of ${amount_cents/100:.2f} for ticket #{ticket_id} by clicking below:\n\n"
+        f"{url}\n\n"
+        "If you have any questions, visit our Help Center at https://help.eventgo.com or reply to this email.\n\n"
+        "Sincerely,\nEventGo Customer Support"
+    )
+
+    publish_message({"subject": subject, "message": message, "recipientEmailAddress": user["email"]})
+
+
 
 # this will be moved to orchestrator to react to webhook events
 @app.post("/webhook", response_model=schemas.WebhookResponse)
@@ -212,29 +235,31 @@ async def stripe_webhook(request: Request):
                     ticket_response_object = ticket_response.json()
                     print(ticket_response_object)
 
-                    payload = {
-                        # "notificationId": str(uuid.uuid4()),
-                        # "timestamp": datetime.now().isoformat(),
-                        "message": f"Your payment of ${payment_intent_id} has been completed for reservation {reservation_id}",
-                        "subject": "Payment Completed",
-                        "recipientEmailAddress": participant_email,
-                        # "notificationType": "PAYMENT_CONFIRMATION"
-                    }
-
-                    # Prepare notification payload
-                    # notification_payload = {
-                    #     "subject": "Payment Completed",
+                    # payload = {
+                    #     # "notificationId": str(uuid.uuid4()),
+                    #     # "timestamp": datetime.now().isoformat(),
                     #     "message": f"Your payment of ${payment_intent_id} has been completed for reservation {reservation_id}",
+                    #     "subject": "Payment Completed",
                     #     "recipientEmailAddress": participant_email,
-                    #     "notificationType": "PAYMENT_CONFIRMATION"
+                    #     # "notificationType": "PAYMENT_CONFIRMATION"
                     # }
                     
                     # Publish to notification queue
-                    publish_success = publish_message(payload)
-                    if publish_success:
-                        print(f"Successfully published payment completion notification for {participant_email}")
-                    else:
-                        print(f"Failed to publish notification for {participant_email}")
+                    # publish_success = publish_message(payload)
+
+                    send_payment_notification(
+                        user_id=buyer_id,
+                        event_id=session.metadata["event_id"],
+                        ticket_id=session.metadata["ticket_id"],
+                        amount_cents=int(session.metadata["amount_in_cents"]),
+                        url="",  # no link needed for confirmation
+                        subject_prefix="Confirmation: Payment Completed"
+                    )
+                                    
+                    # if publish_success:
+                    #     print(f"Successfully published payment completion notification for {participant_email}")
+                    # else:
+                    #     print(f"Failed to publish notification for {participant_email}")
                     
                     return ticket_response_object
                 except Exception as e:
@@ -260,6 +285,9 @@ async def party_booking(request: schemas.PartyBookingRequest):
     print(request.items)
     reservation_id = request.reservation_id
     event_id = request.event_id
+    event_title = request.event_title
+    event_description = request.event_description
+
     leader = ""
     participants = []
     for item in request.items:
@@ -274,7 +302,7 @@ async def party_booking(request: schemas.PartyBookingRequest):
         "reservation_id": reservation_id,
         "currency": "sgd",
         "participants": participants,
-        "description": "test test test",
+        "description": event_title + '\n' + event_description,
         "redirect_url": "http://localhost:3000"
         }
     try:
@@ -308,15 +336,25 @@ async def party_booking(request: schemas.PartyBookingRequest):
                 #     "recipientEmailAddress": payment_link_obj.get('participant_email'),
                 #     "notificationType": "PAYMENT_LINK"
                 # }
-                payload = {
-                        # "notificationId": str(uuid.uuid4()),
-                        # "timestamp": datetime.now().isoformat(),
-                        "message": f"Please complete your payment using this link: {payment_link_obj.get('url')}. Amount: ${payment_link_obj.get('amount')/100:.2f}",
-                        "subject": "Payment Link",
-                        "recipientEmailAddress": payment_link_obj.get('participant_email'),
-                        # "notificationType": "PAYMENT_LINK"
-                    }
-                publish_message(payload)
+                # payload = {
+                #         # "notificationId": str(uuid.uuid4()),
+                #         # "timestamp": datetime.now().isoformat(),
+                #         "message": f"Please complete your payment using this link: {payment_link_obj.get('url')}. Amount: ${payment_link_obj.get('amount')/100:.2f}",
+                #         "subject": "Payment Link",
+                #         "recipientEmailAddress": payment_link_obj.get('participant_email'),
+                #         # "notificationType": "PAYMENT_LINK"
+                #     }
+                # publish_message(payload)
+
+                send_payment_notification(
+                    user_id=payment_link_obj["user_id"],
+                    event_id=event_id,
+                    ticket_id=payment_link_obj["ticket_id"],
+                    amount_cents=payment_link_obj["amount"],
+                    url=payment_link_obj["url"],
+                    subject_prefix="Action Required: Complete Your Payment"
+                )
+                                
                 print(f"Published payment link for {payment_link_obj.get('participant_email')} to notification queue")
 
         return {"status": "ok", "data": res}

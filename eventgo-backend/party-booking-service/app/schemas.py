@@ -28,10 +28,13 @@ class PartyBookingRequestItem(BaseModel):
     user_email: str
     ticket_id: int
     price: int
+    
 class PartyBookingRequest(BaseModel):
     items: List[PartyBookingRequestItem]
     event_id: int
     reservation_id: int
+    event_description: str
+    event_title: str
 
 class TransferNotification(BaseModel):
     subject: str
