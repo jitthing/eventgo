@@ -154,6 +154,19 @@ public class TicketService {
     }
 
     @Transactional
+    public String updatePreference(Long eventId, String seatId, String preference) {
+        Optional<Ticket> ticketOpt = ticketRepository.findByEventIdAndSeatNumber(eventId, seatId);
+        if (ticketOpt.isEmpty()){
+            return "Invalid event ID or no reserved tickets found";
+        }
+        Ticket ticket = ticketOpt.get();
+        ticket.setPreference(preference);
+        ticketRepository.save(ticket);
+
+        return "Preference updated successfully";
+    };
+
+    @Transactional
     public String confirmSeat(Long reservationId, Long userId, String paymentIntentId) {
         List<Ticket> tickets = ticketRepository.findByReservationId(reservationId);
 
@@ -403,4 +416,3 @@ public class TicketService {
         return "Ticket purchase confirmed for user ID: " + userId;
     }
 }
-
