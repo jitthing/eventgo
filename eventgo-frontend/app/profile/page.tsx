@@ -46,9 +46,12 @@ export default function ProfilePage() {
 			try {
 				// Get the user's tickets from the ticket service
 				const userTickets = await getUserTickets(currentUser.id);
+				// Filter tickets to exclude those with status "reserved"
+				const filteredTickets = userTickets.filter((ticket: any) => ticket.status !== "reserved");
+
 				// Fetch event details for each ticket, making sure to use the correct property: eventId.
 				const ticketsWithEvent = await Promise.all(
-					userTickets.map(async (ticket: any) => {
+					filteredTickets.map(async (ticket: any) => {
 						try {
 							const event = await getEvent(ticket.eventId);
 							return { ...ticket, event };

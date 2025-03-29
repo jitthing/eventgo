@@ -50,4 +50,7 @@ public class Ticket {
     @Column(name = "payment_intent_id", nullable = true, length = 255)
     private String paymentIntentId;
 
+    @Column(name = "preference", nullable = true, length = 255)
+    private String preference;
+
 }

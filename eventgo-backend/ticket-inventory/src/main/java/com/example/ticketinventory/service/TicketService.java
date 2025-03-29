@@ -16,12 +16,20 @@ import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.*;
+
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 @Service
 public class TicketService {
 
     @Autowired
     private TicketRepository ticketRepository;
+
+    // Inject the scheduler bean from your configuration
+    @Autowired
+    private ScheduledExecutorService scheduler;
 
     public Optional<Ticket> checkSeatAvailability(Long eventId, String seatNumber) {
         return ticketRepository.findByEventIdAndSeatNumber(eventId, seatNumber);
@@ -48,6 +56,8 @@ public class TicketService {
         return response;
     }
 
+    private static final Logger logger = Logger.getLogger(TicketService.class.getName());
+
     @Transactional
     public Map<String, Object> reserveSeat(Long eventId, List<String> seatNumbers, Long userId) {
         List<Ticket> reservedTickets = new ArrayList<>();
@@ -66,6 +76,10 @@ public class TicketService {
 
         LocalDateTime expirationTime = LocalDateTime.now(ZoneOffset.UTC).plus(10, ChronoUnit.MINUTES);
 
+        
+
+        logger.info("Test log abracadabra");
+
         for (String seatNumber : seatNumbers) {
             Ticket ticket = ticketRepository.findByEventIdAndSeatNumber(eventId, seatNumber).get();
             ticket.setStatus(TicketStatus.reserved);
@@ -73,9 +87,17 @@ public class TicketService {
             ticket.setReservationExpires(expirationTime);
             ticket.setUserId(userId);
             reservedTickets.add(ticket);
+            logger.info("Inside for loop");
+            Runnable task = () -> checkTicketConfirmation(eventId, seatNumber);
+
+            // Schedule the task to run after a 60 seconds delay
+            scheduler.schedule(task, 10, TimeUnit.MINUTES);
+            logger.info("after scheduler starts - 10mins");
         }
 
         ticketRepository.saveAll(reservedTickets);
+
+
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
                 .withZone(ZoneOffset.UTC);
@@ -92,9 +114,26 @@ public class TicketService {
         );
     }
 
+    // Check if ticket is confirmed, else release
+    @Transactional
+    private void checkTicketConfirmation(Long eventId, String seatNumber) {
+        
+        Ticket ticket = ticketRepository.findByEventIdAndSeatNumber(eventId, seatNumber).get();
+        if (ticket.getStatus() != TicketStatus.sold) {
+            ticket.setStatus(TicketStatus.available);
+            ticket.setReservationExpires(null);
+            ticket.setReservationId(null);
+            ticket.setUserId(null);
+        }
+
+        ticketRepository.save(ticket);
+        logger.info("released tickets");
+    }
+
     @Transactional
     public String releaseSeat(Long reservationId) {
         List<Ticket> tickets = ticketRepository.findByReservationId(reservationId);
+        
 
         if (tickets.isEmpty()) {
             return "Invalid reservation ID or no reserved tickets found";
@@ -113,6 +152,19 @@ public class TicketService {
 
         return "All seats released successfully";
     }
+
+    @Transactional
+    public String updatePreference(Long eventId, String seatId, String preference) {
+        Optional<Ticket> ticketOpt = ticketRepository.findByEventIdAndSeatNumber(eventId, seatId);
+        if (ticketOpt.isEmpty()){
+            return "Invalid event ID or no reserved tickets found";
+        }
+        Ticket ticket = ticketOpt.get();
+        ticket.setPreference(preference);
+        ticketRepository.save(ticket);
+
+        return "Preference updated successfully";
+    };
 
     @Transactional
     public String confirmSeat(Long reservationId, Long userId, String paymentIntentId) {
@@ -364,4 +416,3 @@ public class TicketService {
         return "Ticket purchase confirmed for user ID: " + userId;
     }
 }
-
