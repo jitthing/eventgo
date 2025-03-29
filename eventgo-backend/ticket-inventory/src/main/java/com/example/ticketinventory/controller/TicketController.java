@@ -147,22 +147,28 @@ public class TicketController {
 
     // UPDATE SPLIT PREFERENCE
     @Operation(
-            summary = "Confirm ticket purchase for split booking",
-            description = "Confirms a specific ticket reservation after successful payment. Changes only the specified ticket status from reserved to sold."
+            summary = "Update ticket preference for split booking",
+            description = "Updates on user preference whether they wish to keep their ticket upon failure of full party payment. Changes only the specified ticket preference to either keep or refund."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Purchase successfully confirmed"),
-            @ApiResponse(responseCode = "400", description = "Invalid reservation or ticket no longer reserved"),
-            @ApiResponse(responseCode = "404", description = "Reservation or ticket not found")
+            @ApiResponse(responseCode = "200", description = "Preference updated"),
+            @ApiResponse(responseCode = "400", description = "Invalid ticket no longer reserved"),
+            @ApiResponse(responseCode = "404", description = "Ticket not found")
     })
     @PatchMapping("/update-preference")
     public ResponseEntity<Map<String, String>> updatePreference(
-            @RequestBody Long eventId, String seatId, String preference
+        @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Release details",
+                required = true
+        )
+        @RequestBody PreferenceRequest request
     ){
         return ResponseEntity.ok(Map.of(
                 "status", "success",
                 "message", ticketService.updatePreference(
-                        eventId, seatId, preference
+                        request.getEventId(),
+                        request.getSeatId(),
+                        request.getPreference()
                 )
         ));
     }
