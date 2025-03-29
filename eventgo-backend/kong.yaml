@@ -70,3 +70,12 @@ services:
         paths:
           - /transfer
         strip_path: true
+
+
+  - name: event-cancellation-service
+    url: http://host.docker.internal:8008
+    routes:
+      - name: event-cancellation-route
+        paths:
+          - /cancel
+        strip_path: true
