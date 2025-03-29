@@ -92,7 +92,7 @@ public class TicketService {
 
             // Schedule the task to run after a 60 seconds delay
             scheduler.schedule(task, 10, TimeUnit.MINUTES);
-            logger.info("after scheduler starts");
+            logger.info("after scheduler starts - 10mins");
         }
 
         ticketRepository.saveAll(reservedTickets);
@@ -117,7 +117,7 @@ public class TicketService {
     // Check if ticket is confirmed, else release
     @Transactional
     private void checkTicketConfirmation(Long eventId, String seatNumber) {
-        logger.info("inside CTC");
+        
         Ticket ticket = ticketRepository.findByEventIdAndSeatNumber(eventId, seatNumber).get();
         if (ticket.getStatus() != TicketStatus.sold) {
             ticket.setStatus(TicketStatus.available);
@@ -127,11 +127,13 @@ public class TicketService {
         }
 
         ticketRepository.save(ticket);
+        logger.info("released tickets");
     }
 
     @Transactional
     public String releaseSeat(Long reservationId) {
         List<Ticket> tickets = ticketRepository.findByReservationId(reservationId);
+        
 
         if (tickets.isEmpty()) {
             return "Invalid reservation ID or no reserved tickets found";
