@@ -25,131 +25,90 @@ public class TicketController {
     @Autowired
     private TicketService ticketService;
 
-    // GET TICKETS BY EVENT
-    @Operation(
-        summary = "Get tickets by event",
-        description = "Retrieves all tickets and their current status for a specific event. " +
-                     "Includes availability, pricing, and category information."
-    )
+    @Operation(summary = "Get all tickets associated with a user", description = "Retrieves all tickets where the given user is either the current owner or the previous owner.")
     @ApiResponses({
-        @ApiResponse(
-            responseCode = "200",
-            description = "Successfully retrieved tickets",
-            content = @Content(mediaType = "application/json", 
-                schema = @Schema(implementation = TicketResponse.class))
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Event not found"
-        )
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved tickets"),
+            @ApiResponse(responseCode = "404", description = "No tickets found for the user")
+    })
+    @GetMapping("/user/associated/{user_id}")
+    public ResponseEntity<Map<String, Object>> getTicketsForUser(
+            @Parameter(description = "User ID to retrieve associated tickets", example = "2001") @PathVariable("user_id") Long userId) {
+        Map<String, Object> response = ticketService.getTicketsForUser(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    // GET TICKETS BY EVENT
+    @Operation(summary = "Get tickets by event", description = "Retrieves all tickets and their current status for a specific event. "
+            +
+            "Includes availability, pricing, and category information.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved tickets", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TicketResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Event not found")
     })
     @GetMapping("/{event_id}")
     public ResponseEntity<Map<String, Object>> getTicketsByEvent(
-        @Parameter(description = "ID of the event to get tickets for", example = "1001")
-        @PathVariable Long event_id
-    ) {
+            @Parameter(description = "ID of the event to get tickets for", example = "1001") @PathVariable Long event_id) {
         return ResponseEntity.ok(ticketService.getTicketsByEvent(event_id));
     }
 
-    @Operation(
-        summary = "Reserve seats",
-        description = "Reserve multiple seats for an event. Seats will be held for 10 minutes. " +
-                     "All seats must be available for the reservation to succeed."
-    )
+    @Operation(summary = "Reserve seats", description = "Reserve multiple seats for an event. Seats will be held for 10 minutes. "
+            +
+            "All seats must be available for the reservation to succeed.")
     @ApiResponses({
-        @ApiResponse(
-            responseCode = "200",
-            description = "Seats successfully reserved",
-            content = @Content(schema = @Schema(implementation = ReserveTicketResponse.class))
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Invalid request or seats unavailable"
-        )
+            @ApiResponse(responseCode = "200", description = "Seats successfully reserved", content = @Content(schema = @Schema(implementation = ReserveTicketResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request or seats unavailable")
     })
 
     // RESERVE SEATS
     @PostMapping("/reserve")
     public ResponseEntity<Map<String, Object>> reserveSeat(
-        @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Reservation details",
-            required = true,
-            content = @Content(schema = @Schema(implementation = ReserveTicketRequest.class))
-        )
-        @RequestBody ReserveTicketRequest request
-    ) {
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Reservation details", required = true, content = @Content(schema = @Schema(implementation = ReserveTicketRequest.class))) @RequestBody ReserveTicketRequest request) {
         Map<String, Object> response = ticketService.reserveSeat(
-            request.getEventId(), 
-            request.getSeats(), 
-            request.getUserId()
-        );
+                request.getEventId(),
+                request.getSeats(),
+                request.getUserId());
         return ResponseEntity.ok(response);
     }
 
     // CONFIRM TICKET PURCHASE
-    @Operation(
-        summary = "Confirm ticket purchase",
-        description = "Confirms a ticket reservation after successful payment. Changes ticket status from reserved to sold."
-    )
+    @Operation(summary = "Confirm ticket purchase", description = "Confirms a ticket reservation after successful payment. Changes ticket status from reserved to sold.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Purchase successfully confirmed"),
-        @ApiResponse(responseCode = "400", description = "Invalid reservation or tickets no longer reserved"),
-        @ApiResponse(responseCode = "404", description = "Reservation not found")
+            @ApiResponse(responseCode = "200", description = "Purchase successfully confirmed"),
+            @ApiResponse(responseCode = "400", description = "Invalid reservation or tickets no longer reserved"),
+            @ApiResponse(responseCode = "404", description = "Reservation not found")
     })
     @PatchMapping("/confirm")
     public ResponseEntity<Map<String, String>> confirmSeat(
-        @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Confirmation details",
-            required = true,
-            content = @Content(schema = @Schema(implementation = ConfirmTicketRequest.class))
-        )
-        @RequestBody ConfirmTicketRequest request
-    ) {
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Confirmation details", required = true, content = @Content(schema = @Schema(implementation = ConfirmTicketRequest.class))) @RequestBody ConfirmTicketRequest request) {
         return ResponseEntity.ok(Map.of(
-            "status", "success",
-            "message", ticketService.confirmSeat(
-                request.getReservationId(),
-                request.getUserId(),
-                request.getPaymentIntentId()
-            )
-        ));
+                "status", "success",
+                "message", ticketService.confirmSeat(
+                        request.getReservationId(),
+                        request.getUserId(),
+                        request.getPaymentIntentId())));
     }
 
     // CONFIRM TICKET PURCHASE FOR SPLIT BOOKING
-    @Operation(
-        summary = "Confirm ticket purchase for split booking",
-        description = "Confirms a specific ticket reservation after successful payment. Changes only the specified ticket status from reserved to sold."
-    )
+    @Operation(summary = "Confirm ticket purchase for split booking", description = "Confirms a specific ticket reservation after successful payment. Changes only the specified ticket status from reserved to sold.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Purchase successfully confirmed"),
-        @ApiResponse(responseCode = "400", description = "Invalid reservation or ticket no longer reserved"),
-        @ApiResponse(responseCode = "404", description = "Reservation or ticket not found")
+            @ApiResponse(responseCode = "200", description = "Purchase successfully confirmed"),
+            @ApiResponse(responseCode = "400", description = "Invalid reservation or ticket no longer reserved"),
+            @ApiResponse(responseCode = "404", description = "Reservation or ticket not found")
     })
     @PatchMapping("/confirm-split")
     public ResponseEntity<Map<String, String>> confirmSeatSplitBooking(
-        @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Confirmation details including specific ticket",
-            required = true,
-            content = @Content(schema = @Schema(implementation = ConfirmTicketSplitRequest.class))
-        )
-        @RequestBody ConfirmTicketSplitRequest request
-    ) {
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Confirmation details including specific ticket", required = true, content = @Content(schema = @Schema(implementation = ConfirmTicketSplitRequest.class))) @RequestBody ConfirmTicketSplitRequest request) {
         return ResponseEntity.ok(Map.of(
-            "status", "success",
-            "message", ticketService.confirmSeatSplitBooking(
-                request.getReservationId(),
-                request.getUserId(),
-                request.getPaymentIntentId(),
-                request.getTicketId()
-            )
-        ));
+                "status", "success",
+                "message", ticketService.confirmSeatSplitBooking(
+                        request.getReservationId(),
+                        request.getUserId(),
+                        request.getPaymentIntentId(),
+                        request.getTicketId())));
     }
 
     // UPDATE SPLIT PREFERENCE
-    @Operation(
-            summary = "Update ticket preference for split booking",
-            description = "Updates on user preference whether they wish to keep their ticket upon failure of full party payment. Changes only the specified ticket preference to either keep or refund."
-    )
+    @Operation(summary = "Update ticket preference for split booking", description = "Updates on user preference whether they wish to keep their ticket upon failure of full party payment. Changes only the specified ticket preference to either keep or refund.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Preference updated"),
             @ApiResponse(responseCode = "400", description = "Invalid ticket no longer reserved"),
@@ -157,86 +116,66 @@ public class TicketController {
     })
     @PatchMapping("/update-preference")
     public ResponseEntity<Map<String, String>> updatePreference(
-        @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                description = "Release details",
-                required = true
-        )
-        @RequestBody PreferenceRequest request
-    ){
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Release details", required = true) @RequestBody PreferenceRequest request) {
         return ResponseEntity.ok(Map.of(
                 "status", "success",
                 "message", ticketService.updatePreference(
                         request.getEventId(),
                         request.getSeatId(),
-                        request.getPreference()
-                )
-        ));
+                        request.getPreference())));
     }
 
-
-    
     // RELEASE RESERVED SEATS
-    @Operation(
-        summary = "Release reserved seats",
-        description = "Release previously reserved seats back to available status"
-    )
+    @Operation(summary = "Release reserved seats", description = "Release previously reserved seats back to available status")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Seats successfully released"),
-        @ApiResponse(responseCode = "400", description = "Invalid reservation ID")
+            @ApiResponse(responseCode = "200", description = "Seats successfully released"),
+            @ApiResponse(responseCode = "400", description = "Invalid reservation ID")
     })
     @PatchMapping("/release")
     public ResponseEntity<Map<String, String>> releaseSeat(
-        @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Release details",
-            required = true
-        )
-        @RequestBody Map<String, Object> request
-    ) {
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Release details", required = true) @RequestBody Map<String, Object> request) {
         Long reservationId = ((Number) request.get("reservation_id")).longValue();
         return ResponseEntity.ok(Map.of(
                 "status", "success",
-                "message", ticketService.releaseSeat(reservationId)
-        ));
+                "message", ticketService.releaseSeat(reservationId)));
     }
 
     // TRANSFER TICKET OWNERSHIP AFTER VERIFICATION
-    @Operation(
-        summary = "Transfer ticket ownership",
-        description = "Transfer a purchased ticket to another user. Only the current ticket owner can initiate the transfer."
-    )
+    @Operation(summary = "Transfer ticket ownership", description = "Transfer a purchased ticket to another user. Only the current ticket owner can initiate the transfer.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Ticket successfully transferred"),
-        @ApiResponse(responseCode = "400", description = "Invalid ownership or ticket not transferable"),
-        @ApiResponse(responseCode = "404", description = "Ticket not found")
+            @ApiResponse(responseCode = "200", description = "Ticket successfully transferred"),
+            @ApiResponse(responseCode = "400", description = "Invalid ownership or ticket not transferable"),
+            @ApiResponse(responseCode = "404", description = "Ticket not found")
     })
     @PatchMapping("/transfer")
     public ResponseEntity<Map<String, Object>> transferTicket(
-        @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Transfer details including current and new owner information"
-        )
-        @RequestBody Map<String, Object> request
-    ) {
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Transfer details including current and new owner information") @RequestBody Map<String, Object> request) {
         Long ticketId = ((Number) request.get("ticket_id")).longValue();
         Long currentUserId = ((Number) request.get("current_user_id")).longValue();
         Long newUserId = ((Number) request.get("new_user_id")).longValue();
         String paymentIntentId = (String) request.get("payment_intent_id");
         return ResponseEntity.ok(ticketService.transferTicket(ticketId, currentUserId, newUserId, paymentIntentId));
     }
-    
+
+    // Mark ticket as transferring
+    @PatchMapping("/mark-transferring")
+    public ResponseEntity<Map<String, Object>> markTicketTransferring(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Ticket identifier", required = true, content = @Content(schema = @Schema(example = "{\"ticket_id\": 123}"))) @RequestBody Map<String, Object> request) {
+
+        Long ticketId = ((Number) request.get("ticket_id")).longValue();
+        Map<String, Object> response = ticketService.markTicketTransferring(ticketId);
+        return ResponseEntity.ok(response);
+    }
+
     // CANCEL EVENT TICKETS
-    @Operation(
-        summary = "Cancel event tickets",
-        description = "Cancel all reserved (unpaid) tickets for an event. Returns list of affected payment intents."
-    )
+    @Operation(summary = "Cancel event tickets", description = "Cancel all reserved (unpaid) tickets for an event. Returns list of affected payment intents.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Successfully canceled tickets"),
-        @ApiResponse(responseCode = "404", description = "Event not found")
+            @ApiResponse(responseCode = "200", description = "Successfully canceled tickets"),
+            @ApiResponse(responseCode = "404", description = "Event not found")
     })
     @PatchMapping("/{event_id}/cancel")
     public ResponseEntity<Map<String, Object>> cancelTicketsByEvent(
-        @Parameter(description = "ID of the event to cancel tickets for")
-        @PathVariable Long event_id
-    ) {
+            @Parameter(description = "ID of the event to cancel tickets for") @PathVariable Long event_id) {
         return ResponseEntity.ok(ticketService.cancelTicketsByEvent(event_id));
     }
 
@@ -251,7 +190,7 @@ public class TicketController {
     public ResponseEntity<Map<String, Object>> createSeats(@RequestBody Map<String, Object> request) {
         List<Map<String, Object>> events = (List<Map<String, Object>>) request.get("events");
         List<Map<String, Object>> categoryPrices = (List<Map<String, Object>>) request.get("categoryPrices");
-        
+
         // Create a map of category -> price for easier lookup
         Map<String, Double> priceMap = new HashMap<>();
         for (Map<String, Object> categoryPrice : categoryPrices) {
@@ -259,15 +198,15 @@ public class TicketController {
             Double price = ((Number) categoryPrice.get("price")).doubleValue();
             priceMap.put(category, price);
         }
-        
+
         // Process each event. Note: Each seat may now optionally include a "user_id"
         Map<String, Object> response = new HashMap<>();
         List<Map<String, Object>> allCreatedTickets = new ArrayList<>();
-        
+
         for (Map<String, Object> eventData : events) {
             Long eventId = ((Number) eventData.get("eventId")).longValue();
             List<Map<String, Object>> seats = (List<Map<String, Object>>) eventData.get("seats");
-            
+
             // Add price information to each seat based on its category
             for (Map<String, Object> seat : seats) {
                 String category = (String) seat.get("category");
@@ -276,30 +215,26 @@ public class TicketController {
                 }
                 // Optional: "user_id" can be provided here
             }
-            
+
             Map<String, Object> eventResponse = ticketService.createTickets(eventId, seats);
             allCreatedTickets.addAll((List<Map<String, Object>>) eventResponse.get("data"));
         }
-        
+
         response.put("status", "success");
         response.put("message", "Created " + allCreatedTickets.size() + " tickets");
         response.put("data", allCreatedTickets);
-        
+
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/id/{ticket_id}")
-    @Operation(
-        summary = "Get ticket details",
-        description = "Retrieve detailed information about a specific ticket, including payment data"
-    )
+    @Operation(summary = "Get ticket details", description = "Retrieve detailed information about a specific ticket, including payment data")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Ticket found"),
-        @ApiResponse(responseCode = "404", description = "Ticket not found")
+            @ApiResponse(responseCode = "200", description = "Ticket found"),
+            @ApiResponse(responseCode = "404", description = "Ticket not found")
     })
     public ResponseEntity<Map<String, Object>> getTicketById(
-        @PathVariable Long ticket_id
-    ) {
+            @PathVariable Long ticket_id) {
         return ResponseEntity.ok(ticketService.getTicketById(ticket_id));
     }
 

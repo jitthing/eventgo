@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.ArrayList;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import java.time.*;
@@ -71,12 +70,11 @@ public class TicketService {
                 .collect(Collectors.toList());
 
         if (!unavailableSeats.isEmpty()) {
-            return Map.of("status", "failure", "message", "Seats not available: " + String.join(", ", unavailableSeats));
+            return Map.of("status", "failure", "message",
+                    "Seats not available: " + String.join(", ", unavailableSeats));
         }
 
         LocalDateTime expirationTime = LocalDateTime.now(ZoneOffset.UTC).plus(10, ChronoUnit.MINUTES);
-
-        
 
         logger.info("Test log abracadabra");
 
@@ -97,8 +95,6 @@ public class TicketService {
 
         ticketRepository.saveAll(reservedTickets);
 
-
-
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
                 .withZone(ZoneOffset.UTC);
         String formattedExpiration = expirationTime.atOffset(ZoneOffset.UTC).format(formatter);
@@ -109,15 +105,30 @@ public class TicketService {
                         "reservation_id", reservationId,
                         "event_id", eventId,
                         "reserved_seats", seatNumbers,
-                        "expires_at", formattedExpiration
-                )
-        );
+                        "expires_at", formattedExpiration));
+    }
+
+    // Mark ticket as transferring in progress
+    @Transactional
+    public Map<String, Object> markTicketTransferring(Long ticketId) {
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        if (ticketOpt.isEmpty()) {
+            return Map.of("status", "error", "message", "Ticket not found");
+        }
+        Ticket ticket = ticketOpt.get();
+        ticket.setStatus(TicketStatus.transferring);
+        ticketRepository.save(ticket);
+
+        return Map.of(
+                "status", "success",
+                "message", "Ticket marked as transferring",
+                "ticket_id", ticket.getTicketId());
     }
 
     // Check if ticket is confirmed, else release
     @Transactional
     private void checkTicketConfirmation(Long eventId, String seatNumber) {
-        
+
         Ticket ticket = ticketRepository.findByEventIdAndSeatNumber(eventId, seatNumber).get();
         if (ticket.getStatus() != TicketStatus.sold) {
             ticket.setStatus(TicketStatus.available);
@@ -133,7 +144,6 @@ public class TicketService {
     @Transactional
     public String releaseSeat(Long reservationId) {
         List<Ticket> tickets = ticketRepository.findByReservationId(reservationId);
-        
 
         if (tickets.isEmpty()) {
             return "Invalid reservation ID or no reserved tickets found";
@@ -156,7 +166,7 @@ public class TicketService {
     @Transactional
     public String updatePreference(Long eventId, String seatId, String preference) {
         Optional<Ticket> ticketOpt = ticketRepository.findByEventIdAndSeatNumber(eventId, seatId);
-        if (ticketOpt.isEmpty()){
+        if (ticketOpt.isEmpty()) {
             return "Invalid event ID or no reserved tickets found";
         }
         Ticket ticket = ticketOpt.get();
@@ -193,53 +203,51 @@ public class TicketService {
     @Transactional
     public Map<String, Object> createTickets(Long eventId, List<Map<String, Object>> seatsData) {
         List<Ticket> createdTickets = new ArrayList<>();
-        
+
         for (Map<String, Object> seatData : seatsData) {
             String seatNumber = (String) seatData.get("seatNumber");
             String categoryStr = (String) seatData.get("category");
-            String statusStr = seatData.containsKey("status") ? 
-                (String) seatData.get("status") : "available";
-            Double price = seatData.containsKey("price") ? 
-                ((Number) seatData.get("price")).doubleValue() : 0.0;
-            
+            String statusStr = seatData.containsKey("status") ? (String) seatData.get("status") : "available";
+            Double price = seatData.containsKey("price") ? ((Number) seatData.get("price")).doubleValue() : 0.0;
+
             // Check if seat already exists for this event
             Optional<Ticket> existingTicket = checkSeatAvailability(eventId, seatNumber);
             if (existingTicket.isPresent()) {
                 continue; // Skip this seat as it already exists
             }
-            
+
             TicketCategory category;
             try {
                 category = TicketCategory.valueOf(categoryStr.toLowerCase());
             } catch (IllegalArgumentException e) {
                 category = TicketCategory.standard; // Default to standard if invalid category
             }
-            
+
             TicketStatus status;
             try {
                 status = TicketStatus.valueOf(statusStr.toLowerCase());
             } catch (IllegalArgumentException e) {
                 status = TicketStatus.available; // Default to available if invalid status
             }
-            
+
             Ticket ticket = new Ticket();
             ticket.setEventId(eventId);
             ticket.setSeatNumber(seatNumber);
             ticket.setCategory(category);
-            ticket.setStatus(status); 
+            ticket.setStatus(status);
             ticket.setPrice(price);
-            
+
             // NEW: Optionally set user_id if provided in the seatData
             if (seatData.containsKey("user_id")) {
                 ticket.setUserId(((Number) seatData.get("user_id")).longValue());
             }
-            
+
             createdTickets.add(ticket);
         }
-        
+
         // Save all tickets at once
         List<Ticket> savedTickets = ticketRepository.saveAll(createdTickets);
-        
+
         // Format response
         List<Map<String, Object>> ticketList = savedTickets.stream().map(ticket -> {
             Map<String, Object> ticketMap = new HashMap<>();
@@ -251,22 +259,21 @@ public class TicketService {
             ticketMap.put("price", ticket.getPrice());
             return ticketMap;
         }).collect(Collectors.toList());
-        
+
         Map<String, Object> response = new HashMap<>();
         response.put("status", "success");
         response.put("message", "Created " + savedTickets.size() + " tickets for event ID: " + eventId);
         response.put("data", ticketList);
-        
+
         return response;
     }
-    
 
     @Transactional
     public Map<String, Object> cancelTicketsByEvent(Long eventId) {
         List<Ticket> tickets = ticketRepository.findByEventId(eventId);
         int canceledCount = 0;
         List<Map<String, Object>> cancellations = new ArrayList<>();
-    
+
         for (Ticket ticket : tickets) {
             if (ticket.getStatus() == TicketStatus.sold) {
                 canceledCount++;
@@ -284,19 +291,17 @@ public class TicketService {
             ticket.setReservationExpires(null);
             ticket.setReservationId(null);
         }
-    
+
         ticketRepository.saveAll(tickets);
-    
+
         Map<String, Object> response = new HashMap<>();
         response.put("status", "success");
         response.put("message", String.format(
-            "Successfully canceled %d sold tickets for event ID: %d", canceledCount, eventId));
+                "Successfully canceled %d sold tickets for event ID: %d", canceledCount, eventId));
         response.put("cancellations", cancellations);
-    
+
         return response;
     }
-
-
 
     // get tickets by user id
     public Map<String, Object> getTicketsByUserId(Long userId) {
@@ -322,56 +327,87 @@ public class TicketService {
         return response;
     }
 
-    @Transactional
-    public Map<String, Object> transferTicket(Long ticketId, Long currentUserId, Long newUserId, String paymentIntentId) {
+    public Map<String, Object> getTicketsForUser(Long userId) {
+        // Retrieve tickets where the current owner or previous owner equals the
+        // provided userId
+        List<Ticket> tickets = ticketRepository.findByUserIdOrPreviousOwnerUserId(userId, userId);
+
+        List<Map<String, Object>> ticketList = tickets.stream().map(ticket -> {
+            Map<String, Object> ticketMap = new HashMap<>();
+            ticketMap.put("ticketId", ticket.getTicketId());
+            ticketMap.put("eventId", ticket.getEventId());
+            ticketMap.put("seatNumber", ticket.getSeatNumber());
+            ticketMap.put("status", ticket.getStatus().toString());
+            ticketMap.put("category", ticket.getCategory().toString());
+            ticketMap.put("price", ticket.getPrice());
+            ticketMap.put("currentOwner", ticket.getUserId());
+            ticketMap.put("previousOwner", ticket.getPreviousOwnerUserId());
+            return ticketMap;
+        }).collect(Collectors.toList());
+
         Map<String, Object> response = new HashMap<>();
-        
-        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
-        // if (ticketOpt.isEmpty()) {
-        //     response.put("status", "error");
-        //     response.put("message", "Ticket not found");
-        //     return response;
-        // }
-
-        Ticket ticket = ticketOpt.get();
-
-        // // Validate current ownership
-        // if (ticket.getUserId() == null || !ticket.getUserId().equals(currentUserId)) {
-        //     response.put("status", "error");
-        //     response.put("message", "Invalid ticket ownership");
-        //     return response;
-        // }
-
-        // Validate ticket is in sold status (can only transfer purchased tickets)
-        // if (ticket.getStatus() != TicketStatus.sold) {
-        //     response.put("status", "error");
-        //     response.put("message", "Only purchased tickets can be transferred");
-        //     return response;
-        // }
-
-        // Perform transfer
-        ticket.setUserId(newUserId);
-        ticket.setPaymentIntentId(paymentIntentId);
-        ticketRepository.save(ticket);
-
         response.put("status", "success");
-        response.put("message", "Ticket successfully transferred");
-        response.put("ticket_id", ticketId);
-        response.put("new_user_id", newUserId);
-        
+        response.put("data", ticketList);
         return response;
     }
 
-    public Map<String, Object> getTicketById(Long ticketId) {
+    @Transactional
+    public Map<String, Object> transferTicket(Long ticketId, Long currentUserId, Long newUserId,
+            String paymentIntentId) {
         Map<String, Object> response = new HashMap<>();
-        
+
         Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
         if (ticketOpt.isEmpty()) {
             response.put("status", "error");
             response.put("message", "Ticket not found");
             return response;
         }
-        
+
+        Ticket ticket = ticketOpt.get();
+
+        // (Optional) Validate current ownership if needed:
+        // if (ticket.getUserId() == null || !ticket.getUserId().equals(currentUserId))
+        // {
+        // response.put("status", "error");
+        // response.put("message", "Invalid ticket ownership");
+        // return response;
+        // }
+
+        // (Optional) Validate ticket is in sold status if needed:
+        // if (ticket.getStatus() != TicketStatus.sold) {
+        // response.put("status", "error");
+        // response.put("message", "Only purchased tickets can be transferred");
+        // return response;
+        // }
+
+        // Set previous owner before transfer
+        ticket.setPreviousOwnerUserId(ticket.getUserId());
+
+        // Perform transfer: update owner and status, and set payment intent
+        ticket.setUserId(newUserId);
+        ticket.setPaymentIntentId(paymentIntentId);
+        ticket.setStatus(TicketStatus.sold); // Ensuring the status remains sold after transfer
+
+        ticketRepository.save(ticket);
+
+        response.put("status", "success");
+        response.put("message", "Ticket successfully transferred");
+        response.put("ticket_id", ticketId);
+        response.put("new_user_id", newUserId);
+
+        return response;
+    }
+
+    public Map<String, Object> getTicketById(Long ticketId) {
+        Map<String, Object> response = new HashMap<>();
+
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        if (ticketOpt.isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "Ticket not found");
+            return response;
+        }
+
         Ticket ticket = ticketOpt.get();
         response.put("status", "success");
         response.put("ticket_id", ticket.getTicketId());
@@ -380,7 +416,7 @@ public class TicketService {
         response.put("status", ticket.getStatus().toString());
         response.put("payment_intent_id", ticket.getPaymentIntentId());
         response.put("price", ticket.getPrice());
-        
+
         return response;
     }
 
@@ -393,8 +429,8 @@ public class TicketService {
         }
 
         Optional<Ticket> ticketToConfirm = tickets.stream()
-            .filter(t -> t.getTicketId().equals(ticketId))
-            .findFirst();
+                .filter(t -> t.getTicketId().equals(ticketId))
+                .findFirst();
 
         if (ticketToConfirm.isEmpty()) {
             return "Ticket not found in this reservation";
