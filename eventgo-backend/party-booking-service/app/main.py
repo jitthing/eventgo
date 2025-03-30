@@ -190,7 +190,8 @@ async def stripe_webhook(request: Request):
                     print(f"[CALL] Calling {TICKET_TRANSFER_URL} to transfer tickets with {transfer_body}")
                     ticket_transfer = requests.post(
                         f"{TICKET_TRANSFER_URL}/transfer",
-                        json=transfer_body
+                        json=transfer_body,
+                        timeout=10  # Set a timeout of 10 seconds
                     )
                     if ticket_transfer.status_code != 200:
                         return {"status": "error", "message": f"Transfer failed: {ticket_transfer.text}"}
