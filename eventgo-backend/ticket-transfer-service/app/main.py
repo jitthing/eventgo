@@ -104,6 +104,18 @@ async def generate_transfer_payment_link(request: schemas.TransferPaymentRequest
         
         ticket_info = ticket_info_response.json()
         
+        # New: Mark the ticket as transferring before generating the payment link
+        mark_resp = requests.patch(
+            f"{TICKET_INVENTORY_URL}/tickets/mark-transferring",
+            json={"ticket_id": int(request.ticket_id)},
+            timeout=10
+        )
+        if mark_resp.status_code != 200:
+            raise HTTPException(
+                status_code=mark_resp.status_code,
+                detail=f"Failed to mark ticket as transferring: {mark_resp.text}"
+            )
+
         # Get the ticket price from ticket inventory
         ticket_price = ticket_info.get("price")
         event_id = ticket_info.get("event_id")
@@ -211,15 +223,6 @@ async def generate_transfer_payment_link(request: schemas.TransferPaymentRequest
 @app.post("/transfer")
 async def transfer(request: schemas.TicketTransferRequest):
     """
-    What i need:
-    old payment id
-    new payment id
-    ticket id
-    seller id
-    seller email
-    buyer email
-    buyer id
-    amount
     """
     # Get the original payment_intent_id from ticket inventory service
     try:
