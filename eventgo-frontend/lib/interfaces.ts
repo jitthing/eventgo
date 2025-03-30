@@ -116,3 +116,14 @@ export interface TransferTicketResponse {
   ticket_id: number;
   new_user_id: number;
 }
+
+
+// New schema to avoid breaking old code.
+export interface AssociatedTicket extends Ticket {
+  previousOwner?: number | null;
+}
+
+export interface AssociatedTicketResponse {
+  status: string;
+  data: AssociatedTicket[];
+}
