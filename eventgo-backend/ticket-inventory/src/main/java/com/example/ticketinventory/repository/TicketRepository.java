@@ -20,4 +20,5 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     // New method to find tickets by current owner or previous owner
     List<Ticket> findByUserIdOrPreviousOwnerUserId(Long userId, Long previousOwnerUserId);
 
+    Ticket findByTicketId(Long ticketId);
 }

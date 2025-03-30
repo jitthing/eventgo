@@ -120,9 +120,10 @@ public class TicketController {
         return ResponseEntity.ok(Map.of(
                 "status", "success",
                 "message", ticketService.updatePreference(
-                        request.getEventId(),
-                        request.getSeatId(),
-                        request.getPreference())));
+                        request.getTicketId(),
+                        request.getPreference()
+                )
+        ));
     }
 
     // RELEASE RESERVED SEATS
@@ -179,6 +180,26 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.cancelTicketsByEvent(event_id));
     }
 
+    @Operation(
+            summary = "Cancel singular ticket on refund",
+            description = "To cancel ticket(s) after party booking failed for those who choose for refund."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully cancelled tickets"),
+            @ApiResponse(responseCode = "404", description = "Tickets not found")
+    })
+    @PatchMapping("/cancel-ticket")
+    public ResponseEntity<Map<String, Object>> cancelTicket(
+            @RequestBody CancelTicketRequest request
+    ){
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "data", ticketService.cancelTickets(
+                        request.getTicketList()
+                )
+        ));
+    }
+
     // GET TICKETS BY USER ID
     @GetMapping("/user/{user_id}")
     public ResponseEntity<Map<String, Object>> getTicketsByUserId(@PathVariable Long user_id) {
@@ -228,14 +249,35 @@ public class TicketController {
     }
 
     @GetMapping("/id/{ticket_id}")
-    @Operation(summary = "Get ticket details", description = "Retrieve detailed information about a specific ticket, including payment data")
+    @Operation(
+        summary = "Get ticket details",
+        description = "Retrieve detailed information about a specific ticket, including payment data"
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Ticket found"),
-            @ApiResponse(responseCode = "404", description = "Ticket not found")
+        @ApiResponse(responseCode = "200", description = "Ticket found"),
+        @ApiResponse(responseCode = "404", description = "Ticket not found")
     })
-    public ResponseEntity<Map<String, Object>> getTicketById(
-            @PathVariable Long ticket_id) {
-        return ResponseEntity.ok(ticketService.getTicketById(ticket_id));
+    public ResponseEntity<Map<String, Object>> getTicketsById(
+        @RequestBody TicketListRequest ticketListRequest
+    ) {
+        return ResponseEntity.ok(ticketService.getTicketsById(ticketListRequest.getTicketList()));
     }
+
+    @GetMapping("/tickets-by-ids")
+    @Operation(
+        summary = "Get tickets by ticket IDs",
+        description = "Retrieve tickets by reservation ID"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Ticket found"),
+        @ApiResponse(responseCode = "404", description = "Ticket not found")
+    })
+    public ResponseEntity<Map<String, Object>> getTicketsByIdList(
+        @RequestBody TicketListRequest ticketListRequest
+    ) {
+        return ResponseEntity.ok(ticketService.getTicketsById(ticketListRequest.getTicketList()));
+    }
+
+
 
 }

@@ -68,6 +68,7 @@ def seed_users():
         {"email": "user3@example.com", "password": "password", "full_name": "Mark Lee", "role": "user"},
         {"email": "lyejiajun99@gmail.com", "password": "password", "full_name": "Jia Jun", "role": "user"},
         {"email": "jiajun.lye.2023@scis.smu.edu.sg", "password": "password", "full_name": "SMU JJ", "role": "user"},
+        {"email": "jitthing617@gmail.com", "password": "password", "full_name": "SMU Jitt", "role": "user"},
     ]
 
     for u in users:

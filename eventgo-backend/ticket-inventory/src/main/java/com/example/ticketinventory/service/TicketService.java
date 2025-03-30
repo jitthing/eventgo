@@ -164,17 +164,31 @@ public class TicketService {
     }
 
     @Transactional
-    public String updatePreference(Long eventId, String seatId, String preference) {
-        Optional<Ticket> ticketOpt = ticketRepository.findByEventIdAndSeatNumber(eventId, seatId);
-        if (ticketOpt.isEmpty()) {
-            return "Invalid event ID or no reserved tickets found";
-        }
-        Ticket ticket = ticketOpt.get();
+    public String updatePreference(Long ticketId, String preference) {
+        Ticket ticket = ticketRepository.findByTicketId(ticketId);
+//        if (ticketOpt.isEmpty()){
+//            return "Invalid event ID or no reserved tickets found";
+//        }
+//        Ticket ticket = ticketOpt.get();
         ticket.setPreference(preference);
         ticketRepository.save(ticket);
 
         return "Preference updated successfully";
     };
+
+    @Transactional
+    public Map<String, Object> getTicketsById(List<Long> ticketList){
+        List<Ticket> tickets = new ArrayList<>();
+        for( Long id : ticketList){
+            Ticket ticket = ticketRepository.findByTicketId(id);
+            tickets.add(ticket);
+        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("data", tickets);
+
+        return response;
+    }
 
     @Transactional
     public String confirmSeat(Long reservationId, Long userId, String paymentIntentId) {
@@ -267,6 +281,21 @@ public class TicketService {
 
         return response;
     }
+
+    @Transactional
+    public List<Ticket> cancelTickets(List<Long> ticketList){
+        List<Ticket> res = new ArrayList<>();
+        for (Long id : ticketList) {
+            Ticket ticket = ticketRepository.findByTicketId(id);
+            ticket.setPaymentIntentId(null);
+            ticket.setUserId(null);
+            ticket.setPreference(null);
+            ticket.setStatus(TicketStatus.available);
+            res.add(ticket);
+        }
+        return res;
+    }
+    
 
     @Transactional
     public Map<String, Object> cancelTicketsByEvent(Long eventId) {

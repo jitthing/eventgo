@@ -1,18 +1,19 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+import asyncio
 import os
 import stripe
 import datetime
 import requests
 import json
 import pika
-import uuid
 from . import schemas
 from dotenv import load_dotenv
 import pika
 import json
 from datetime import datetime
 import uuid
+import time
 
 load_dotenv()
 
@@ -100,6 +101,44 @@ def send_payment_notification(user_id: int, event_id: int, ticket_id: int, amoun
 
     publish_message({"subject": subject, "message": message, "recipientEmailAddress": user["email"]})
 
+async def refund_split(ticketList: list[int], sleepTime: int):
+    await asyncio.sleep(sleepTime)
+    print("[PROCESS] Starting refund checks")
+    ticketsReq = requests.get(
+        f"{TICKET_INVENTORY_URL}/tickets/tickets-by-ids",
+        json={"ticketList": ticketList}
+        )
+    # print(ticketsReq.json())
+    tickets = ticketsReq.json().get("data")
+    toRefund = []
+    # print(tickets)
+    for ticket in tickets:
+        try:
+            if ticket.get("status") == "sold" and ticket.get("preference") == "refund":
+                print("[PROCESS] Calling refund now")
+                toRefund.append(ticket.get("ticketId"))
+                refund = requests.post(
+                    f"{STRIPE_SERVICE_URL}/refund",
+                    json={"payment_intent_id": ticket.get("paymentIntentId")}
+                )
+
+        except Exception as e:
+            print(f"Unexpected error: {str(e)}")
+            return {"status": "error", "message": f"Unexpected error: {str(e)}"}
+    
+    try:
+        print("[PROCESS] Calling cancellation now")
+        cancel = requests.patch(
+            f"{TICKET_INVENTORY_URL}/tickets/cancel-ticket",
+            json={"ticketList": toRefund}
+        )
+        print(cancel.json())
+
+        return {"status": "ok"}
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        return {"status": "error", "message": f"Unexpected error: {str(e)}"}
+    
 
 
 # this will be moved to orchestrator to react to webhook events
@@ -228,7 +267,7 @@ async def stripe_webhook(request: Request):
                 print(ticket_confirm_req)
 
                 try:
-                    confirm_ticket_endpoint = f"{TICKET_INVENTORY_URL}/tickets/confirm"
+                    confirm_ticket_endpoint = f"{TICKET_INVENTORY_URL}/tickets/confirm-split"
                     print(f"Calling ticket service at: {confirm_ticket_endpoint}")
                     ticket_response = requests.patch(
                         confirm_ticket_endpoint, 
@@ -251,10 +290,10 @@ async def stripe_webhook(request: Request):
                     # publish_success = publish_message(payload)
 
                     send_payment_notification(
-                        user_id=buyer_id,
+                        user_id=user_id,
                         event_id=session.metadata["event_id"],
                         ticket_id=session.metadata["ticket_id"],
-                        amount_cents=int(session.metadata["amount_in_cents"]),
+                        amount_cents=int(session.amount * 100),
                         url="",  # no link needed for confirmation
                         subject_prefix="Confirmation: Payment Completed"
                     )
@@ -281,7 +320,7 @@ async def stripe_webhook(request: Request):
         return {"status": "success"}
 
 @app.post("/party-booking")
-async def party_booking(request: schemas.PartyBookingRequest):
+async def party_booking(request: schemas.PartyBookingRequest, background_tasks: BackgroundTasks):
     """
     """
     # get links and email
@@ -293,12 +332,14 @@ async def party_booking(request: schemas.PartyBookingRequest):
 
     leader = ""
     participants = []
+    ticket_ids = []
     for item in request.items:
+        ticket_ids.append(item.ticket_id)
         if ";" in item.user_email:
             leader = item.user_email[:-1]
-            participants.append({"email": leader, "user_id": item.user_id, "amount": item.price, "ticket_id": item.ticket_id, "redirect_url": f"http://localhost:3000/confirmation?eventId={event_id}&seats=A{item.ticket_id}&total={item.price/100:.2f}"})
+            participants.append({"email": leader, "user_id": item.user_id, "amount": item.price, "ticket_id": item.ticket_id, "redirect_url": f"http://localhost:3000/confirmation?eventId={event_id}&ticket={item.ticket_id}&total={item.price/100:.2f}&split=true"})
         else:
-            participants.append({"email": item.user_email, "user_id": item.user_id, "amount": item.price, "ticket_id": item.ticket_id, "redirect_url": f"http://localhost:3000/confirmation?eventId={event_id}&seats=A{item.ticket_id}&total={item.price/100:.2f}"})
+            participants.append({"email": item.user_email, "user_id": item.user_id, "amount": item.price, "ticket_id": item.ticket_id, "redirect_url": f"http://localhost:3000/confirmation?eventId={event_id}&ticket={item.ticket_id}&total={item.price/100:.2f}&split=true"})
     
     split_payments_req = {
         "event_id": event_id,
@@ -360,6 +401,7 @@ async def party_booking(request: schemas.PartyBookingRequest):
                                 
                 print(f"Published payment link for {payment_link_obj.get('participant_email')} to notification queue")
 
+        background_tasks.add_task(refund_split, ticket_ids, 60)
         return {"status": "ok", "data": res}
     except requests.exceptions.RequestException as e:
         print(f"Connection error: {str(e)}")
