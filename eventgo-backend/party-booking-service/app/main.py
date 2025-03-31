@@ -293,7 +293,7 @@ async def stripe_webhook(request: Request):
                         user_id=user_id,
                         event_id=session.metadata["event_id"],
                         ticket_id=session.metadata["ticket_id"],
-                        amount_cents=int(session.amount * 100),
+                        amount_cents=int(session.amount_total),
                         url="",  # no link needed for confirmation
                         subject_prefix="Confirmation: Payment Completed"
                     )
