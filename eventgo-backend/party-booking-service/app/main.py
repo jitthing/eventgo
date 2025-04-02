@@ -111,34 +111,40 @@ async def refund_split(ticketList: list[int], sleepTime: int):
     # print(ticketsReq.json())
     tickets = ticketsReq.json().get("data")
     toRefund = []
-    # print(tickets)
+    needToRefund = False
     for ticket in tickets:
-        try:
-            if ticket.get("status") == "sold" and ticket.get("preference") == "refund":
-                print("[PROCESS] Calling refund now")
-                toRefund.append(ticket.get("ticketId"))
-                refund = requests.post(
-                    f"{STRIPE_SERVICE_URL}/refund",
-                    json={"payment_intent_id": ticket.get("paymentIntentId")}
-                )
+        if ticket.get("status") == "available":
+            needToRefund = True
+            break
+    if needToRefund:
+        for ticket in tickets:
+            try:
+                if ticket.get("status") == "sold" and ticket.get("preference") == "refund":
+                    print("[PROCESS] Calling refund now")
+                    toRefund.append(ticket.get("ticketId"))
+                    refund = requests.post(
+                        f"{STRIPE_SERVICE_URL}/refund",
+                        json={"payment_intent_id": ticket.get("paymentIntentId")}
+                    )
 
+            except Exception as e:
+                print(f"Unexpected error: {str(e)}")
+                return {"status": "error", "message": f"Unexpected error: {str(e)}"}
+        
+        try:
+            print("[PROCESS] Calling cancellation now")
+            cancel = requests.patch(
+                f"{TICKET_INVENTORY_URL}/tickets/cancel-ticket",
+                json={"ticketList": toRefund}
+            )
+            print(cancel.json())
+
+            return {"status": "ok"}
         except Exception as e:
             print(f"Unexpected error: {str(e)}")
             return {"status": "error", "message": f"Unexpected error: {str(e)}"}
-    
-    try:
-        print("[PROCESS] Calling cancellation now")
-        cancel = requests.patch(
-            f"{TICKET_INVENTORY_URL}/tickets/cancel-ticket",
-            json={"ticketList": toRefund}
-        )
-        print(cancel.json())
-
-        return {"status": "ok"}
-    except Exception as e:
-        print(f"Unexpected error: {str(e)}")
-        return {"status": "error", "message": f"Unexpected error: {str(e)}"}
-    
+    else:
+        return {"status": "ok", "message": "No tickets to refund"}
 
 
 # this will be moved to orchestrator to react to webhook events
