@@ -37,22 +37,20 @@ async def cancel_event(event_id: int):
     1. Marking the event cancelled in the Events service.
     2. Cancelling all associated tickets in the Tickets service.
     3. Grouping cancellations by payment_intent_id to issue a single refund per intent.
-    4. Fetching event details to include in user notifications.
-    5. Sending one notification per user with total refunded amount and ticket details.
+    4. Sending one notification per user with total refunded amount and ticket details.
 
     Returns a summary of refund outcomes.
     """
     async with httpx.AsyncClient() as client:
-        # Cancel event and tickets
-        await client.patch(f"{EVENTS_URL}/events/{event_id}/cancel")
+        # Cancel event
+        event_cancel_resp = await client.patch(f"{EVENTS_URL}/events/{event_id}/cancel")
+        event_cancel_resp.raise_for_status()
+        event = event_cancel_resp.json()       
+        
+        # Cancel tickets
         resp = await client.patch(f"{TICKETS_URL}/tickets/{event_id}/cancel")
         resp.raise_for_status()
         cancellations = resp.json().get("cancellations", [])
-
-        # Fetch event details
-        event_resp = await client.get(f"{EVENTS_URL}/events/{event_id}")
-        event_resp.raise_for_status()
-        event = event_resp.json().get("EventAPI", {})
 
         grouped = defaultdict(list)
         for rec in cancellations:
