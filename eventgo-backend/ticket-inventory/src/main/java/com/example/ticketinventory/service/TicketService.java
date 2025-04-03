@@ -18,7 +18,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.*;
 
 import java.util.logging.Logger;
-import java.util.logging.Level;
 
 @Service
 public class TicketService {
@@ -438,14 +437,24 @@ public class TicketService {
         }
 
         Ticket ticket = ticketOpt.get();
+        Map<String, Object> ticketData = new HashMap<>();
+        ticketData.put("ticketId", ticket.getTicketId());
+        ticketData.put("eventId", ticket.getEventId());
+        ticketData.put("seatNumber", ticket.getSeatNumber());
+        ticketData.put("status", ticket.getStatus().toString());
+        ticketData.put("category", ticket.getCategory().toString());
+        ticketData.put("reservationExpires", ticket.getReservationExpires());
+        ticketData.put("reservationId", ticket.getReservationId());
+        ticketData.put("userId", ticket.getUserId());
+        ticketData.put("price", ticket.getPrice());
+        ticketData.put("paymentIntentId", ticket.getPaymentIntentId());
+        ticketData.put("preference", ticket.getPreference());
+        ticketData.put("previousOwnerUserId", ticket.getPreviousOwnerUserId());
+    
+        // Wrap in `data` array and add a success status
+        response.put("data", List.of(ticketData));
         response.put("status", "success");
-        response.put("ticket_id", ticket.getTicketId());
-        response.put("user_id", ticket.getUserId());
-        response.put("event_id", ticket.getEventId());
-        response.put("status", ticket.getStatus().toString());
-        response.put("payment_intent_id", ticket.getPaymentIntentId());
-        response.put("price", ticket.getPrice());
-
+        
         return response;
     }
 
