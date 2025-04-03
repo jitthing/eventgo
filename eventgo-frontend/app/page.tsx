@@ -99,21 +99,21 @@ export default function Home() {
 						<div className="bg-white rounded-lg shadow-md p-6 text-center">
 							<h3 className="text-xl font-semibold mb-4 text-black">Concerts</h3>
 							<p className="text-black mb-4">Find tickets to your favorite artists</p>
-							<Link href="/concerts" className="text-blue-600 hover:text-blue-800 font-medium">
+							<Link href="/events" className="text-blue-600 hover:text-blue-800 font-medium">
 								Browse Concerts
 							</Link>
 						</div>
 						<div className="bg-white rounded-lg shadow-md p-6 text-center">
 							<h3 className="text-xl font-semibold mb-4 text-black">Sports</h3>
 							<p className="text-black mb-4">Get tickets to exciting sports events</p>
-							<Link href="/sports" className="text-blue-600 hover:text-blue-800 font-medium">
+							<Link href="/events" className="text-blue-600 hover:text-blue-800 font-medium">
 								Browse Sports
 							</Link>
 						</div>
 						<div className="bg-white rounded-lg shadow-md p-6 text-center">
 							<h3 className="text-xl font-semibold mb-4 text-black">Theater</h3>
 							<p className="text-black mb-4">Experience the magic of live theater</p>
-							<Link href="/theater" className="text-blue-600 hover:text-blue-800 font-medium">
+							<Link href="/events" className="text-blue-600 hover:text-blue-800 font-medium">
 								Browse Theater
 							</Link>
 						</div>

@@ -166,7 +166,8 @@ export default function ProfilePage() {
 			<div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8 space-y-6">
 				{/* Profile Details */}
 				<div className="flex items-center space-x-4">
-					<img src={user?.avatar || "https://api.dicebear.com/6.x/initials/svg?seed=User"} alt="Profile Avatar" className="w-16 h-16 rounded-full" />
+					<img src={`https://api.dicebear.com/6.x/initials/svg?seed=${encodeURIComponent(user?.full_name || "User")}`} alt="Profile Avatar" className="w-16 h-16 rounded-full" />
+
 					<div>
 						<h1 className="text-3xl font-bold text-black">{user?.full_name || "User"}</h1>
 						<p className="text-black text-lg">{user?.email}</p>
