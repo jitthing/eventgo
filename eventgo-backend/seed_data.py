@@ -63,11 +63,12 @@ def seed_users():
     """
     users = [
         {"email": "admin@eventgo.com", "password": "admin", "full_name": "Warren Buffet", "role": "admin"},
-        {"email": "user1@example.com", "password": "password", "full_name": "Jack Neo", "role": "user"},
+        {"email": "user1@example.com", "password": "password", "full_name": "Elijah", "role": "user"},
         {"email": "user2@example.com", "password": "password", "full_name": "Lebron James", "role": "user"},
         {"email": "user3@example.com", "password": "password", "full_name": "Mark Lee", "role": "user"},
-        {"email": "lyejiajun99@gmail.com", "password": "password", "full_name": "Jia Jun", "role": "user"},
-        {"email": "jiajun.lye.2023@scis.smu.edu.sg", "password": "password", "full_name": "SMU JJ", "role": "user"},
+        {"email": "lyejiajun99@gmail.com", "password": "password", "full_name": "Bob", "role": "user"},
+        {"email": "jiajun.lye.2023@scis.smu.edu.sg", "password": "password", "full_name": "Charlie", "role": "user"},
+        {"email": "jiajun.lye.@protege.vc", "password": "password", "full_name": "Dory", "role": "user"},
         {"email": "jitthing617@gmail.com", "password": "password", "full_name": "SMU Jitt", "role": "user"},
     ]
 
