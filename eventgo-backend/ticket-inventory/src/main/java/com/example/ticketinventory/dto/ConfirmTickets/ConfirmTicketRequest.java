@@ -1,4 +1,4 @@
-package com.example.ticketinventory.dto;
+package com.example.ticketinventory.dto.ConfirmTickets;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
