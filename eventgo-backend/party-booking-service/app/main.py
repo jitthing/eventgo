@@ -12,8 +12,6 @@ from dotenv import load_dotenv
 import pika
 import json
 from datetime import datetime
-import uuid
-import time
 
 load_dotenv()
 
@@ -81,7 +79,83 @@ def publish_message(message, routing_key=NOTIFICATION_ROUTING_KEY):
     except Exception as e:
         print(f"Failed to publish message: {str(e)}")
         return False
-
+    
+def send_refund_notification(user_id: int, event_id: int, ticket_id: int, amount_cents: int, reason: str = ""):
+    """
+    Send a notification when a refund is processed
+    
+    Args:
+        user_id: ID of the user receiving the refund
+        event_id: ID of the event
+        ticket_id: ID of the ticket being refunded
+        amount_cents: Amount being refunded in cents
+        reason: Optional reason for refund
+    """
+    try:
+        # Get user information
+        user_response = requests.get(f"{AUTH_URL}/users/{user_id}")
+        if user_response.status_code != 200:
+            print(f"Failed to get user information for ID {user_id}")
+            return False
+            
+        user = user_response.json()
+        
+        # Get event information
+        event_response = requests.get(f"{EVENTS_URL}/events/{event_id}")
+        if event_response.status_code != 200:
+            print(f"Failed to get event information for ID {event_id}")
+            return False
+            
+        event = event_response.json().get("EventAPI", {})
+        
+        # Format the event date nicely
+        formatted_date = datetime.fromisoformat(event["date"].replace("Z","+00:00")).strftime("%B %d, %Y at %I:%M %p")
+        
+        # Create a subject line
+        subject = f"Refund Processed: '{event['title']}'"
+        
+        # Create a message body
+        message = (
+            f"Hello {user['full_name']},\n\n"
+            f"Your refund for '{event['title']}' (scheduled for {formatted_date} at {event['venue']}) "
+            f"has been successfully processed.\n\n"
+            f"Refund Details:\n"
+            f"- Ticket Number: #{ticket_id}\n"
+            f"- Amount Refunded: ${amount_cents/100:.2f}\n"
+        )
+        
+        # Add reason if provided
+        if reason:
+            message += f"- Reason: {reason}\n\n"
+        else:
+            message += "\n"
+            
+        # Add standard footer message
+        message += (
+            "The refund may take 5-10 business days to appear in your account, depending on your payment method "
+            "and financial institution.\n\n"
+            "If you have any questions about this refund, visit our Help Center at https://help.eventgo.com "
+            "or reply to this email.\n\n"
+            "Sincerely,\nEventGo Customer Support"
+        )
+        
+        # Publish notification to RabbitMQ
+        publish_success = publish_message({
+            "subject": subject, 
+            "message": message, 
+            "recipientEmailAddress": user["email"]
+        })
+        
+        if publish_success:
+            print(f"Successfully sent refund notification to {user['email']}")
+            return True
+        else:
+            print(f"Failed to send refund notification to {user['email']}")
+            return False
+            
+    except Exception as e:
+        print(f"Error sending refund notification: {str(e)}")
+        return False
 
 
 def send_payment_notification(user_id: int, event_id: int, ticket_id: int, amount_cents: int, url: str, subject_prefix: str):
@@ -113,7 +187,8 @@ async def refund_split(ticketList: list[int], sleepTime: int):
     toRefund = []
     needToRefund = False
     for ticket in tickets:
-        if ticket.get("status") == "available":
+        if ticket.get("status") == "reserved":
+            toRefund.append(ticket.get("ticketId"))
             needToRefund = True
             break
     if needToRefund:
@@ -121,12 +196,24 @@ async def refund_split(ticketList: list[int], sleepTime: int):
             try:
                 if ticket.get("status") == "sold" and ticket.get("preference") == "refund":
                     print("[PROCESS] Calling refund now")
-                    toRefund.append(ticket.get("ticketId"))
+                    # toRefund.append(ticket.get("ticketId"))
                     refund = requests.post(
                         f"{STRIPE_SERVICE_URL}/refund",
                         json={"payment_intent_id": ticket.get("paymentIntentId")}
                     )
-
+                    refund_data = refund.json()
+                    ## insert notif here
+                    ticket_id = ticket.get("ticketId")
+                    toRefund.append(ticket_id)
+                    user_id = ticket.get("userId")
+                    event_id = ticket.get("eventId")
+                    send_refund_notification(
+                            user_id=user_id,
+                            event_id=event_id,
+                            ticket_id=ticket_id,
+                            amount_cents=refund_data.get("amount", 0),  # Use amount from refund response
+                            reason="Group booking cancelled - some participants did not complete payment"
+                        )
             except Exception as e:
                 print(f"Unexpected error: {str(e)}")
                 return {"status": "error", "message": f"Unexpected error: {str(e)}"}
