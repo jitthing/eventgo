@@ -129,7 +129,7 @@ public class TicketService {
     private void checkTicketConfirmation(Long eventId, String seatNumber) {
 
         Ticket ticket = ticketRepository.findByEventIdAndSeatNumber(eventId, seatNumber).get();
-        if (ticket.getStatus() != TicketStatus.sold) {
+        if (ticket.getStatus() == TicketStatus.reserved) {
             ticket.setStatus(TicketStatus.available);
             ticket.setReservationExpires(null);
             ticket.setReservationId(null);
