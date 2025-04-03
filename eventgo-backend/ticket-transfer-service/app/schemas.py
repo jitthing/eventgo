@@ -23,7 +23,6 @@ class WebhookResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    stripe_configured: bool
 
 class TransferNotification(BaseModel):
     subject: str

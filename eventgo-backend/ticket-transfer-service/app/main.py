@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import os
-import stripe
 import requests
 import json
 import uuid
@@ -35,8 +34,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
 # Service URLs
 STRIPE_SERVICE_URL = os.environ.get("STRIPE_SERVICE_URL")
@@ -377,4 +374,4 @@ async def transfer(request: schemas.TicketTransferRequest):
 
 @app.get("/health", response_model=schemas.HealthResponse)
 def get_health():
-    return {"status": "healthy", "stripe_configured": bool(stripe.api_key)} 
+    return {"status": "healthy"} 

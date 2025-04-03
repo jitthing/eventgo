@@ -1,7 +1,7 @@
 server.port=8000
 
 # Service URLs (read from environment variables)
-tickets.inventory.url=${TICKETS_INVENTORY_URL}
+tickets.inventory.url=${TICKET_INVENTORY_URL}
 stripe.service.url=${STRIPE_SERVICE_URL}
 auth.service.url=${AUTH_SERVICE_URL}
 events.api.url=${EVENTS_API_URL}
