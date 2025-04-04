@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const TICKET_INVENTORY_URL = process.env.NEXT_PUBLIC_TICKETS_API_URL;
 
@@ -14,6 +14,22 @@ export default function ConfirmationPage() {
   const total = searchParams.get("total");
   const split = searchParams.get("split");
 
+  // const [refundOption, setRefundOption] = useState<string | null>(null);
+
+  // Add this useEffect to clear localStorage when confirmation page loads
+  useEffect(() => {
+    // Clear all reservation and payment related data
+    localStorage.removeItem("reservationId");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("selectedSeats");
+    localStorage.removeItem("totalPrice");
+    localStorage.removeItem("stripeRedirectUrl");
+    localStorage.removeItem("isGroupBooking");
+    
+    // You may need to update some state in your parent component
+    // If you have access to a context that manages this state
+    // Example: setHasPendingReservation(false);
+  }, []);
   const [choice, setChoice] = useState<boolean>(false);
 
   async function handleChoice(choice: String) {
