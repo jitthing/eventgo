@@ -199,14 +199,14 @@ def seed_events() -> list:
 
         },
         {
-        "title": "Taylor Swift Live in Singapore",
-        "description": "Experience an unforgettable night as Taylor Swift brings her iconic hits and dazzling stage production to Singapore. A must-see concert for all Swifties!",
-        "category": "Concert",
-        "venue": "Singapore Indoor Stadium",
-        "is_featured": True,
-        "image_url": "https://res.klook.com/image/upload/q_85/c_fill,w_750/v1687924294/xtt0ebhzie7tyfusofva.jpg",
-        "date": "2025-07-20T20:00:00.000000",
-        "status": "Upcoming"
+            "title": "Taylor Swift Live in Singapore",
+            "description": "Experience an unforgettable night with Taylor Swift",
+            "category": "Concert",
+            "venue": "Singapore Indoor Stadium",
+            "is_featured": True,
+            "image_url": "https://res.klook.com/image/upload/q_85/c_fill,w_750/v1687924294/xtt0ebhzie7tyfusofva.jpg",
+            "date": "2025-07-20T20:00:00.000000",
+            "status": "Upcoming"
         }
     ]
 
