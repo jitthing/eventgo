@@ -8,6 +8,7 @@ import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe, StripeElementsOptions } from "@stripe/stripe-js";
 import { useAuth } from "@/context/AuthContext";
+import { fetchUser } from "@/lib/auth";
 
 // Make sure to call loadStripe outside component rendering
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string);
@@ -202,8 +203,9 @@ export default function PaymentPage(): JSX.Element {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 
-	const { user } = useAuth();
-
+	const { user, setUser } = useAuth();
+	const [loading, setLoading] = useState<boolean>(!user);
+	
 	const eventId = searchParams.get("eventId");
 	const seats = searchParams.get("seats");
 	const total = searchParams.get("total");
@@ -211,6 +213,22 @@ export default function PaymentPage(): JSX.Element {
 	const [reservationId, setReservationId] = useState<string | null>(searchParams.get("reservationId") || null);
 	const [userId, setUserId] = useState<string | null>(null);
 	const [success, setSuccess] = useState<boolean>(false);
+
+	// Fetch user data if not available
+	useEffect(() => {
+		async function loadUser() {
+			if (!user) {
+				try {
+					const fetchedUser = await fetchUser(); // Make sure to import fetchUser
+					setUser(fetchedUser);
+				} catch (error) {
+					router.push("/login");
+				}
+			}
+			setLoading(false);
+		}
+		loadUser();
+	}, [user, setUser, router]);
 
 	useEffect(() => {
 		// If reservationId wasn't in URL, try to get from localStorage
