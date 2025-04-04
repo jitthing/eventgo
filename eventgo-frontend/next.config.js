@@ -42,6 +42,10 @@ const nextConfig = {
 				protocol: "https",
 				hostname: "singaporegp.sg",
 			},
+			{
+				protocol: "https",
+				hostname: "res.klook.com",
+			},
 		],
 	},
 };

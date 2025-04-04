@@ -198,6 +198,16 @@ def seed_events() -> list:
             "status": "Upcoming"
 
         },
+        {
+        "title": "Taylor Swift Live in Singapore",
+        "description": "Experience an unforgettable night as Taylor Swift brings her iconic hits and dazzling stage production to Singapore. A must-see concert for all Swifties!",
+        "category": "Concert",
+        "venue": "Singapore Indoor Stadium",
+        "is_featured": True,
+        "image_url": "https://res.klook.com/image/upload/q_85/c_fill,w_750/v1687924294/xtt0ebhzie7tyfusofva.jpg",
+        "date": "2025-07-20T20:00:00.000000",
+        "status": "Upcoming"
+        }
     ]
 
     created_event_ids = []
@@ -222,7 +232,7 @@ def seed_events() -> list:
 # ---------------------------------------------------------------------------
 # 5) Create tickets for each event
 # ---------------------------------------------------------------------------
-def generate_tickets(event_id, min_seats=10, max_seats=30):
+def generate_tickets(event_id, min_seats=15, max_seats=35):
     """
     Creates 10-30 tickets per event with random 'sold' statuses.
     Assigns randomized but consistent prices per event.
