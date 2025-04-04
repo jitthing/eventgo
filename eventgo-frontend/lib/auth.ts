@@ -52,16 +52,6 @@ export async function logoutUser() {
   });
 }
 
-export async function debugCookies() {
-  const response = await fetch(`${AUTH_API_URL}/debug-cookies`, {
-    method: "GET",
-    credentials: "include",
-  });
-  const data = await response.json();
-  console.log("Debug Cookies:", data);
-  return data;
-}
-
 export async function searchUsers(email: string) {
   const response = await fetch(`${AUTH_API_URL}/search-users?email=${encodeURIComponent(email)}`, {
     method: "GET",

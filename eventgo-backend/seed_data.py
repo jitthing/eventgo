@@ -63,11 +63,13 @@ def seed_users():
     """
     users = [
         {"email": "admin@eventgo.com", "password": "admin", "full_name": "Warren Buffet", "role": "admin"},
-        {"email": "user1@example.com", "password": "password", "full_name": "Jack Neo", "role": "user"},
+        {"email": "user1@example.com", "password": "password", "full_name": "Elijah", "role": "user"},
         {"email": "user2@example.com", "password": "password", "full_name": "Lebron James", "role": "user"},
         {"email": "user3@example.com", "password": "password", "full_name": "Mark Lee", "role": "user"},
-        {"email": "lyejiajun99@gmail.com", "password": "password", "full_name": "Jia Jun", "role": "user"},
-        {"email": "jiajun.lye.2023@scis.smu.edu.sg", "password": "password", "full_name": "SMU JJ", "role": "user"},
+        {"email": "lyejiajun99@gmail.com", "password": "password", "full_name": "Bob", "role": "user"},
+        {"email": "jiajun.lye.2023@scis.smu.edu.sg", "password": "password", "full_name": "Charlie", "role": "user"},
+        {"email": "jiajun.lye@protege.vc", "password": "password", "full_name": "Dory", "role": "user"},
+        {"email": "jitthing617@gmail.com", "password": "password", "full_name": "SMU Jitt", "role": "user"},
     ]
 
     for u in users:
@@ -196,6 +198,16 @@ def seed_events() -> list:
             "status": "Upcoming"
 
         },
+        {
+        "title": "Taylor Swift Live in Singapore",
+        "description": "Experience an unforgettable night as Taylor Swift brings her iconic hits and dazzling stage production to Singapore. A must-see concert for all Swifties!",
+        "category": "Concert",
+        "venue": "Singapore Indoor Stadium",
+        "is_featured": True,
+        "image_url": "https://res.klook.com/image/upload/q_85/c_fill,w_750/v1687924294/xtt0ebhzie7tyfusofva.jpg",
+        "date": "2025-07-20T20:00:00.000000",
+        "status": "Upcoming"
+        }
     ]
 
     created_event_ids = []
@@ -220,7 +232,7 @@ def seed_events() -> list:
 # ---------------------------------------------------------------------------
 # 5) Create tickets for each event
 # ---------------------------------------------------------------------------
-def generate_tickets(event_id, min_seats=10, max_seats=30):
+def generate_tickets(event_id, min_seats=15, max_seats=35):
     """
     Creates 10-30 tickets per event with random 'sold' statuses.
     Assigns randomized but consistent prices per event.

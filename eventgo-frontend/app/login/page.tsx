@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { loginUser, fetchUser, debugCookies } from "@/lib/auth";
+import { loginUser, fetchUser } from "@/lib/auth";
 import { useAuth } from "@/context/AuthContext"; // ✅ Import AuthContext
 
 export default function LoginPage() {

@@ -2,7 +2,7 @@
 
 export default function AdminEventsSkeleton() {
 	return (
-		<div className="min-h-screen bg-white py-16 px-4 max-w-7xl mx-auto">
+		<div className="min-h-screen bg-white py-16 px-4 mx-auto">
 			<header className="text-center mb-12">
 				<div className="h-12 bg-gray-200 rounded w-64 mx-auto mb-2" />
 				<div className="h-6 bg-gray-200 rounded w-48 mx-auto" />

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { fetchUser, logoutUser } from "@/lib/auth";
-import { getUserTickets, getEvent } from "@/lib/api";
+import { getUserAssociatedTickets, getEvent } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { formatEventDuration } from "@/lib/utils";
 import TransferModal from "@/components/TransferModal";
@@ -45,7 +45,7 @@ export default function ProfilePage() {
 			}
 			try {
 				// Get the user's tickets from the ticket service
-				const userTickets = await getUserTickets(currentUser.id);
+				const userTickets = await getUserAssociatedTickets(currentUser.id);
 				// Filter tickets to exclude those with status "reserved"
 				const filteredTickets = userTickets.filter((ticket: any) => ticket.status !== "reserved");
 
@@ -83,6 +83,15 @@ export default function ProfilePage() {
 		}
 		fetchData();
 	}, [user, setUser, router]);
+
+	const markTicketAsTransferring = (ticketId: number) => {
+		setGroupedTickets((prev) =>
+			prev.map((group) => ({
+				...group,
+				tickets: group.tickets.map((ticket) => (ticket.ticketId === ticketId ? { ...ticket, status: "transferring" } : ticket)),
+			}))
+		);
+	};
 
 	if (loading) return <ProfileSkeleton />;
 	if (error) return <p className="text-red-500 text-center mt-20">{error}</p>;
@@ -157,7 +166,8 @@ export default function ProfilePage() {
 			<div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8 space-y-6">
 				{/* Profile Details */}
 				<div className="flex items-center space-x-4">
-					<img src={user?.avatar || "https://api.dicebear.com/6.x/initials/svg?seed=User"} alt="Profile Avatar" className="w-16 h-16 rounded-full" />
+					<img src={`https://api.dicebear.com/6.x/initials/svg?seed=${encodeURIComponent(user?.full_name || "User")}`} alt="Profile Avatar" className="w-16 h-16 rounded-full" />
+
 					<div>
 						<h1 className="text-3xl font-bold text-black">{user?.full_name || "User"}</h1>
 						<p className="text-black text-lg">{user?.email}</p>
@@ -215,43 +225,65 @@ export default function ProfilePage() {
 							</div>
 							{/* Tickets for this event */}
 							<div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-								{group.tickets.map((ticket) => (
-									<div key={ticket.ticketId} className="p-4 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
-										<div className="flex justify-between items-center">
-											<p className="text-black font-medium">Seat: {ticket.seatNumber}</p>
-											<div onClick={() => setQrTicketId(ticket.ticketId)} className="cursor-pointer">
-												<QRCode value={`ticket-${ticket.ticketId}`} size={50} />
+								{group.tickets.map((ticket) => {
+									const isCancelled = group.event?.status === "Cancelled";
+									const isTransferring = ticket.status === "transferring";
+									const isTransferred = ticket.previousOwner && ticket.previousOwner === user.id;
+
+									return (
+										<div key={ticket.ticketId} className={`p-4 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition ${isTransferring || isTransferred ? "opacity-50 pointer-events-none" : ""}`}>
+											<div className="flex justify-between items-center">
+												<p className="text-black font-medium">Seat: {ticket.seatNumber}</p>
+												<div onClick={() => setQrTicketId(ticket.ticketId)} className="cursor-pointer">
+													<QRCode value={`ticket-${ticket.ticketId}`} size={50} />
+												</div>
 											</div>
-											{/* <span className={`text-sm font-medium ${ticket.status === "sold" ? "text-green-600" : ticket.status === "reserved" ? "text-yellow-600" : "text-gray-600"}`}>
-												{ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
-											</span> */}
+											<p className="mt-1 text-black">Category: {ticket.category}</p>
+											<p className="mt-1 text-black">Price: ${Number(ticket.price).toFixed(2)}</p>
+											<div className="mt-4">
+												<button
+													disabled={isCancelled || isTransferring || isTransferred}
+													onClick={() =>
+														!isCancelled &&
+														!isTransferring &&
+														!isTransferred &&
+														setTransferTicket({
+															ticketId: ticket.ticketId,
+															eventId: group.event.event_id,
+															eventTitle: group.event.title,
+															seatNumber: ticket.seatNumber,
+														})
+													}
+													className={`py-2 px-4 rounded w-full transition-colors ${
+														isCancelled
+															? "bg-gray-200 cursor-not-allowed text-green-600 font-semibold"
+															: isTransferred
+															? "bg-gray-200 cursor-not-allowed text-yellow-600 font-semibold"
+															: isTransferring
+															? "bg-gray-200 cursor-not-allowed text-yellow-600 font-semibold"
+															: "bg-blue-600 hover:bg-blue-700 text-white"
+													}`}
+												>
+													{isCancelled ? "Refunded" : isTransferred ? "Transferred" : isTransferring ? "Transfer in progress" : "Transfer Ticket"}
+												</button>
+											</div>
 										</div>
-										<p className="mt-1 text-black">Category: {ticket.category}</p>
-										<p className="mt-1 text-black">Price: ${Number(ticket.price).toFixed(2)}</p>
-										<div className="mt-4">
-											<button
-												disabled={group.event?.status === "Cancelled"}
-												onClick={() =>
-													setTransferTicket({
-														ticketId: ticket.ticketId,
-														eventId: group.event.event_id,
-														eventTitle: group.event.title,
-														seatNumber: ticket.seatNumber,
-													})
-												}
-												className={`py-2 px-4 rounded w-full transition-colors ${
-													group.event?.status === "Cancelled" ? "bg-gray-200 cursor-not-allowed text-green-600 font-semibold" : "bg-blue-600 hover:bg-blue-700 text-white"
-												}`}
-											>
-												{group.event?.status === "Cancelled" ? "Refunded" : "Transfer Ticket"}
-											</button>
-										</div>
-									</div>
-								))}
+									);
+								})}
 							</div>
-							{transferTicket && (
+							{/* {transferTicket && (
 								<TransferModal ticketId={transferTicket.ticketId} eventId={transferTicket.eventId} eventTitle={transferTicket.eventTitle} seatNumber={transferTicket.seatNumber} onClose={() => setTransferTicket(null)} />
-							)}{" "}
+							)}{" "} */}
+							{transferTicket && (
+								<TransferModal
+									ticketId={transferTicket.ticketId}
+									eventId={transferTicket.eventId}
+									eventTitle={transferTicket.eventTitle}
+									seatNumber={transferTicket.seatNumber}
+									onClose={() => setTransferTicket(null)}
+									onTransferInitiated={markTicketAsTransferring}
+								/>
+							)}
 						</div>
 					))
 				)}

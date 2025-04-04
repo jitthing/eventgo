@@ -10,6 +10,7 @@ export default function ConfirmationPage() {
   const searchParams = useSearchParams();
   const eventId = searchParams.get("eventId");
   const seats = searchParams.get("seats");
+  const ticket = searchParams.get("ticket");
   const total = searchParams.get("total");
   const split = searchParams.get("split");
 
@@ -29,6 +30,7 @@ export default function ConfirmationPage() {
     // If you have access to a context that manages this state
     // Example: setHasPendingReservation(false);
   }, []);
+  const [choice, setChoice] = useState<boolean>(false);
 
   async function handleChoice(choice: String) {
     const preferenceResponse = await fetch(
@@ -37,12 +39,12 @@ export default function ConfirmationPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          eventId: eventId,
-          seatId: seats,
+          ticketId: ticket,
           preference: choice,
         }),
       }
     );
+    setChoice(true);
   }
 
   return (
@@ -59,14 +61,16 @@ export default function ConfirmationPage() {
         <div className="mt-6 p-4 bg-gray-100 rounded-lg">
           <h3 className="text-lg font-semibold text-black">🎟️ Your Order</h3>
           <p className="text-black">Event ID: {eventId}</p>
-          <p className="text-black">Selected Seats: {seats}</p>
+          {seats && <p className="text-black">Selected Seats: {seats}</p>}
+          {ticket && <p className="text-black">Ticket: {ticket}</p>}
+
           <p className="text-lg font-semibold mt-2 text-black">
             Total Paid: <span className="text-blue-600">${total}</span>
           </p>
         </div>
 
         {/* Refund Option - Only show if split payment is used */}
-        {split === "true" && (
+        {split === "true" && choice === false && (
           <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <h3 className="text-lg font-semibold text-black">
               Automatic Refund Option

@@ -12,9 +12,10 @@ interface TransferModalProps {
 	eventTitle: string;
 	seatNumber: string;
 	onClose: () => void;
+	onTransferInitiated: (ticketId: number) => void;
 }
 
-export default function TransferModal({ ticketId, eventId, eventTitle, seatNumber, onClose }: TransferModalProps) {
+export default function TransferModal({ ticketId, eventId, eventTitle, seatNumber, onClose, onTransferInitiated }: TransferModalProps) {
 	const { user } = useAuth();
 	const [email, setEmail] = useState("");
 	const [error, setError] = useState("");
@@ -82,6 +83,7 @@ export default function TransferModal({ ticketId, eventId, eventTitle, seatNumbe
 			}
 
 			window.alert("Ticket transfer request sent successfully!");
+			onTransferInitiated(ticketId); // ✅ Inform parent to update state
 			console.log("Transfer success:", body);
 		} catch (err: unknown) {
 			console.error("Network error during transfer:", err);

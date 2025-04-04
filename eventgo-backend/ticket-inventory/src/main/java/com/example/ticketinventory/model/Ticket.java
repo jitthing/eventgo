@@ -38,8 +38,8 @@ public class Ticket {
     @Column(name = "reservation_id", nullable = true)
     private Long reservationId;
 
-//    @Column(name = "booking_id", nullable = true)
-//    private Long bookingId;
+    // @Column(name = "booking_id", nullable = true)
+    // private Long bookingId;
 
     @Column(name = "user_id", nullable = true)
     private Long userId;
@@ -53,4 +53,7 @@ public class Ticket {
     @Column(name = "preference", nullable = true, length = 255)
     private String preference;
 
+    // New field to track the previous owner
+    @Column(name = "previous_owner_user_id", nullable = true)
+    private Long previousOwnerUserId;
 }

@@ -1,6 +1,8 @@
 import { 
   EventResponse, Event, Ticket, TicketResponse, TicketStatus, ReserveTicketRequest, ReserveTicketResponse, 
-  ConfirmTicketRequest, ConfirmTicketResponse, TransferTicketRequest, TransferTicketResponse 
+  ConfirmTicketRequest, ConfirmTicketResponse, TransferTicketRequest, TransferTicketResponse, 
+  AssociatedTicketResponse,
+  AssociatedTicket
 } from "./interfaces";
 
 const EVENTS_API_URL = process.env.NEXT_PUBLIC_EVENTS_API_URL || 'https://personal-vyyhsf3d.outsystemscloud.com/EventsOutsystem/rest/EventsAPI';
@@ -209,5 +211,17 @@ export async function getUserTickets(user_id: number): Promise<Ticket[]> {
   }
   const ticketResponse = await response.json();
   // Return the array of tickets from the "data" field
+  return ticketResponse.data;
+}
+
+/**
+ * Get all tickets associated with a specific user, including tickets where the user was a previous owner.
+ */
+export async function getUserAssociatedTickets(user_id: number): Promise<AssociatedTicket[]> {
+  const response = await fetch(`${TICKETS_API_URL}/tickets/user/associated/${user_id}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch associated user tickets');
+  }
+  const ticketResponse: AssociatedTicketResponse = await response.json();
   return ticketResponse.data;
 }

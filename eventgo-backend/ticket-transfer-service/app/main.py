@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import os
-import stripe
 import requests
 import json
 import uuid
@@ -10,6 +9,19 @@ from dotenv import load_dotenv
 import pika
 import json
 from datetime import datetime
+import logging
+import sys
+import traceback
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout)  # Ensure logs go to stdout (visible in Docker logs)
+    ]
+)
+logger = logging.getLogger(__name__)
+
 
 load_dotenv()
 
@@ -22,8 +34,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
 # Service URLs
 STRIPE_SERVICE_URL = os.environ.get("STRIPE_SERVICE_URL")
@@ -77,6 +87,8 @@ def publish_notification(notification: schemas.TransferNotification):
         
         connection.close()
     except Exception as e:
+        logger.error("Error publishing notification: %s", traceback.format_exc())
+
         print(f"Error publishing notification: {str(e)}")
         raise
 
@@ -102,11 +114,28 @@ async def generate_transfer_payment_link(request: schemas.TransferPaymentRequest
                 detail=f"Failed to retrieve ticket info: {ticket_info_response.text}"
             )
         
-        ticket_info = ticket_info_response.json()
-        
+        ticket_info_json = ticket_info_response.json()
+        ticket_data = ticket_info_json.get("data")
+        if not ticket_data or len(ticket_data) == 0:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+
+        ticket_info = ticket_data[0]
+
+        # New: Mark the ticket as transferring before generating the payment link
+        mark_resp = requests.patch(
+            f"{TICKET_INVENTORY_URL}/tickets/mark-transferring",
+            json={"ticket_id": int(request.ticket_id)},
+            timeout=10
+        )
+        if mark_resp.status_code != 200:
+            raise HTTPException(
+                status_code=mark_resp.status_code,
+                detail=f"Failed to mark ticket as transferring: {mark_resp.text}"
+            )
+
         # Get the ticket price from ticket inventory
         ticket_price = ticket_info.get("price")
-        event_id = ticket_info.get("event_id")
+        event_id = ticket_info.get("eventId")
         # original_payment_intent = ticket_info.get("payment_intent_id")
         if not ticket_price:
             raise HTTPException(
@@ -142,7 +171,7 @@ async def generate_transfer_payment_link(request: schemas.TransferPaymentRequest
         payment_link_response = requests.post(
             create_link_endpoint,
             json=payment_link_req,
-            timeout=10
+            timeout=30
         )
 
         if payment_link_response.status_code != 200:
@@ -169,7 +198,7 @@ async def generate_transfer_payment_link(request: schemas.TransferPaymentRequest
 
         # print(ticket["event_id"])
 
-        event_resp = requests.get(f"{EVENTS_URL}/events/{ticket.get('event_id')}")
+        event_resp = requests.get(f"{EVENTS_URL}/events/{event_id}")
         event_resp.raise_for_status()
         event = event_resp.json().get("EventAPI", {})
 
@@ -205,21 +234,14 @@ async def generate_transfer_payment_link(request: schemas.TransferPaymentRequest
         }
 
     except Exception as e:
+        logger.error("Error in generate_transfer_payment_link: %s", traceback.format_exc())
+
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/transfer")
 async def transfer(request: schemas.TicketTransferRequest):
     """
-    What i need:
-    old payment id
-    new payment id
-    ticket id
-    seller id
-    seller email
-    buyer email
-    buyer id
-    amount
     """
     # Get the original payment_intent_id from ticket inventory service
     try:
@@ -233,10 +255,17 @@ async def transfer(request: schemas.TicketTransferRequest):
             print(f"Failed to get ticket info: {ticket_info_response.status_code} - {ticket_info_response.text}")
             return {"status": "error", "message": f"Failed to retrieve ticket info: {ticket_info_response.text}"}
         
-        ticket_info = ticket_info_response.json()
+        # ticket_info = ticket_info_response.json()
+
+        ticket_info_json = ticket_info_response.json()
+        ticket_data = ticket_info_json.get("data")
+        if not ticket_data or len(ticket_data) == 0:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+
+        ticket_info = ticket_data[0]
         print(f"Ticket info retrieved: {ticket_info}")
         
-        original_payment_intent_id = ticket_info.get("payment_intent_id")
+        original_payment_intent_id = ticket_info.get("paymentIntentId")
         
         if not original_payment_intent_id:
             print("No payment_intent_id found in ticket info")
@@ -307,7 +336,7 @@ async def transfer(request: schemas.TicketTransferRequest):
         message = (
             f"Hello {seller.get('full_name', '')},\n\n"
             f"This is to confirm that your ticket #{request.ticket_id} for '{event.get('title')}' scheduled for "
-            f"{formatted_date} at {event.get('venue')} has been transferred successfully. A refund of SGD {request.amount:.2f} "
+            f"{formatted_date} at {event.get('venue')} has been transferred successfully. A refund of SGD {request.amount * 0.01:.2f} "
             f"will be processed to your original payment method shortly.\n\n"
             f"If you have any questions, visit our Help Center at https://help.eventgo.com or reply to this email.\n\n"
             f"Thank you for using EventGo.\n\n"
@@ -334,6 +363,9 @@ async def transfer(request: schemas.TicketTransferRequest):
         return {"status": "success", "message": "Ticket transfer completed"}
     
     except Exception as e:
+
+        logger.error("Error processing ticket transfer: %s", traceback.format_exc())
+
         print(f"Error processing ticket transfer: {str(e)}")
         return {"status": "error", "message": f"Error processing ticket transfer: {str(e)}"}
                     
@@ -342,4 +374,4 @@ async def transfer(request: schemas.TicketTransferRequest):
 
 @app.get("/health", response_model=schemas.HealthResponse)
 def get_health():
-    return {"status": "healthy", "stripe_configured": bool(stripe.api_key)} 
+    return {"status": "healthy"} 

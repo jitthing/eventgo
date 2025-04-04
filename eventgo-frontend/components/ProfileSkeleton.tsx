@@ -5,7 +5,7 @@ import { SkeletonBox } from "./Skeleton";
 export default function ProfileSkeleton() {
 	return (
 		<div className="min-h-screen bg-gray-50 p-8">
-			<div className="max-w-4xl mx-auto space-y-8">
+			<div className="mx-auto space-y-8">
 				{/* Profile Header */}
 				<div className="bg-white rounded-lg shadow-lg p-8 space-y-6">
 					<div className="flex items-center space-x-4">

@@ -26,7 +26,7 @@ const Navbar = () => {
 							<div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse" />
 						) : user ? (
 							<button onClick={() => router.push("/profile")} className="flex items-center">
-								<img src={user?.avatar || "https://api.dicebear.com/6.x/initials/svg?seed=User"} alt="Profile Avatar" className="w-10 h-10 rounded-full border border-gray-300 cursor-pointer" />
+								<img src={`https://api.dicebear.com/6.x/initials/svg?seed=${encodeURIComponent(user?.full_name || "User")}`} alt="Profile Avatar" className="w-10 h-10 rounded-full border border-gray-300 cursor-pointer" />{" "}
 							</button>
 						) : (
 							<>
