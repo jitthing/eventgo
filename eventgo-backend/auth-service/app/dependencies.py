@@ -14,7 +14,7 @@ from . import models
 # SECRET_KEY = os.getenv("JWT_SECRET_KEY", "fallback_key")
 SECRET_KEY = "your_super_secret_key_here"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
