@@ -1,36 +1,36 @@
 package ticketBookingSystem.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
-    
-    @Autowired
-    private MinimalAuthFilter minimalAuthFilter;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(authorize -> authorize
-            .requestMatchers("/public/**").permitAll()
-            .requestMatchers("/bookings/test").permitAll()
-            .requestMatchers("/bookings/status").permitAll()
-            .requestMatchers("/bookings/initiateBooking").permitAll()
-            .requestMatchers("/bookings/process-booking").permitAll()
-            // Everything else requires authentication
-            .anyRequest().authenticated()
-
-            );
-        // Add our minimal auth filter before the standard authentication filter
-        // http.addFilterBefore(minimalAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .cors(Customizer.withDefaults())
+            // Make sure you're explicitly permitting all URLs if you want to disable auth completely
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/**").permitAll()
+                // Comment out or remove all other matchers
+                // .requestMatchers("/api/**").authenticated()
+            )
+            // Disable session management if using stateless authentication
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+            
+        // Comment out any JWT filter configuration temporarily
+        // http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        
         return http.build();
     }
+    
+    // Other beans...
 }

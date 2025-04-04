@@ -1,0 +1,160 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+      "title": "OpenAPI definition",
+      "version": "v0"
+    },
+    "servers": [
+      {
+        "url": "http://localhost:8007",
+        "description": "Generated server url"
+      }
+    ],
+    "paths": {
+      "/bookings/process-booking": {
+        "post": {
+          "tags": [
+            "booking-controller"
+          ],
+          "summary": "Initiates booking process",
+          "description": "Validates payment, Confirms seats and Publish message to notification service to be sent when booking successful",
+          "operationId": "processBooking",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessBookingRequestDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "409": {
+              "description": "Seat confirmation failed",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ProcessBookingResponseDTO"
+                  }
+                }
+              }
+            },
+            "200": {
+              "description": "Booking successful",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ProcessBookingResponseDTO"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Unexpected server error",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ProcessBookingResponseDTO"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Payment validation failed",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ProcessBookingResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "ProcessBookingRequestDTO": {
+          "type": "object",
+          "description": "Request payload for processing a booking, including seat selection, payment details, and user info.",
+          "properties": {
+            "eventId": {
+              "type": "string",
+              "description": "ID of the event being booked",
+              "example": "EVT123"
+            },
+            "seats": {
+              "type": "array",
+              "description": "List of seat IDs the user wants to reserve",
+              "example": [
+                "A1",
+                "A2",
+                "A3"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "paymentIntentId": {
+              "type": "string",
+              "description": "Stripe Payment Intent ID",
+              "example": "pi_3JcXZa2eZvKYlo2C1TbC8"
+            },
+            "reservationId": {
+              "type": "string",
+              "description": "Reservation ID from ticket inventory",
+              "example": "RSV789"
+            },
+            "userId": {
+              "type": "string",
+              "description": "User ID making the booking",
+              "example": "USR456"
+            },
+            "userEmail": {
+              "type": "string",
+              "description": "User's email address to send booking confirmation",
+              "example": "jane.doe@example.com"
+            },
+            "totalAmount": {
+              "type": "number",
+              "format": "float",
+              "description": "Total amount to charge the user (in USD)",
+              "example": 149.99
+            }
+          },
+          "required": [
+            "eventId",
+            "paymentIntentId",
+            "reservationId",
+            "seats",
+            "totalAmount",
+            "userEmail",
+            "userId"
+          ]
+        },
+        "ProcessBookingResponseDTO": {
+          "type": "object",
+          "description": "Response payload for a processed booking request.",
+          "properties": {
+            "status": {
+              "type": "string",
+              "description": "Status of the booking process",
+              "example": "SUCCESS"
+            },
+            "errorMessage": {
+              "type": "string",
+              "description": "Error message if booking failed",
+              "example": "Payment validation failed"
+            },
+            "confirmationMessage": {
+              "type": "string",
+              "description": "Confirmation message if booking succeeded",
+              "example": "Booking confirmed for event EVT123 with payment ID pi_3JcXZa2eZvKYlo2C1TbC8"
+            }
+          }
+        }
+      }
+    }
+}

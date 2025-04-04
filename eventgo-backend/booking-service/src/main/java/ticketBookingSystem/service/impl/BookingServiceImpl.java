@@ -1,20 +1,23 @@
 package ticketBookingSystem.service.impl;
 
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import lombok.extern.slf4j.Slf4j;
 import ticketBookingSystem.dto.Booking.ProcessBookingRequestDTO;
 import ticketBookingSystem.dto.Booking.ProcessBookingResponseDTO;
 import ticketBookingSystem.dto.notification.NotificationDTO;
+import ticketBookingSystem.exception.PaymentValidationException;
+import ticketBookingSystem.exception.SeatConfirmationException;
 import ticketBookingSystem.service.BookingService;
 import ticketBookingSystem.service.NotificationProducer;
-import lombok.extern.slf4j.Slf4j;
-
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Date;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -53,17 +56,19 @@ public class BookingServiceImpl implements BookingService {
             // 1. Validate payment with Stripe service
             boolean paymentValid = validatePayment(paymentIntentId, eventId, request.getSeats());
             if (!paymentValid) {
-                response.setStatus("FAILED");
-                response.setConfirmationMessage("Payment validation failed.");
-                return response;
+                throw new PaymentValidationException("Payment validation failed");
+                // response.setStatus("FAILED");
+                // response.setConfirmationMessage("Payment validation failed.");
+                // return response;
             }
 
             // 2. Confirm seat in Ticket Inventory service
             boolean seatConfirmed = confirmSeat(request);
             if (!seatConfirmed) {
-                response.setStatus("FAILED");
-                response.setConfirmationMessage("Failed to confirm seat in Ticket Inventory.");
-                return response;
+                throw new SeatConfirmationException("Failed to confirm seat");
+                // response.setStatus("FAILED");
+                // response.setConfirmationMessage("Failed to confirm seat in Ticket Inventory.");
+                // return response;
             }
 
             // 3. Send confirmation email
@@ -298,7 +303,4 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    public String test() {
-        return "test";
-    }
 }
