@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.example.ticketinventory.dto.*;
-import com.example.ticketinventory.dto.CancelTicket.CancelTicketRequest;
+import com.example.ticketinventory.dto.CancelTicket.*;
 import com.example.ticketinventory.dto.ReserveTickets.*;
 import com.example.ticketinventory.dto.ReleaseTickets.*;
 import com.example.ticketinventory.dto.CreateTickets.*;
@@ -25,8 +25,9 @@ import com.example.ticketinventory.dto.MarkTransferring.*;
 import com.example.ticketinventory.dto.ConfirmTickets.*;
 import com.example.ticketinventory.dto.GetTicketsByUserID.*;
 import com.example.ticketinventory.dto.TicketAssociatedUser.*;
+import com.example.ticketinventory.dto.TicketListRequest.TicketListRequest;
 import com.example.ticketinventory.dto.GetTicketByTicketID.*;
-import com.example.ticketinventory.dto.CancelTicket.*;
+import com.example.ticketinventory.dto.TicketListRequest.*;
 import org.springframework.http.HttpStatus;
 import java.util.Map;
 import java.util.List;
@@ -370,8 +371,8 @@ public class TicketController {
         description = "Retrieve tickets by reservation ID"
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Ticket found"),
-        @ApiResponse(responseCode = "404", description = "Ticket not found")
+        @ApiResponse(responseCode = "200", description = "Ticket found", content = @Content(schema = @Schema(implementation = TicketListResponse.class))),
+        // @ApiResponse(responseCode = "404", description = "Ticket not found")
     })
     public ResponseEntity<Map<String, Object>> getTicketsByIdList(
         @RequestBody TicketListRequest ticketListRequest
