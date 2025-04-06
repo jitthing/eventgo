@@ -320,7 +320,7 @@ async def stripe_webhook(request: Request):
                 try:
                     # transfer_id = session.metadata.get("transfer_id")
                     print(f"[CALL] Calling {TICKET_TRANSFER_URL} to transfer tickets with {transfer_body}")
-                    ticket_transfer = requests.post(
+                    ticket_transfer = requests.patch(
                         f"{TICKET_TRANSFER_URL}/transfer",
                         json=transfer_body,
                         timeout=10  # Set a timeout of 10 seconds

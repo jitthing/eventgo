@@ -54,7 +54,7 @@ public class BookingServiceImpl implements BookingService {
         
         try {
             // 1. Validate payment with Stripe service
-            boolean paymentValid = validatePayment(paymentIntentId, eventId, request.getSeats());
+            boolean paymentValid = confirmPayment(paymentIntentId, eventId, request.getSeats());
             if (!paymentValid) {
                 throw new PaymentValidationException("Payment validation failed");
                 // response.setStatus("FAILED");
@@ -214,8 +214,8 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private boolean validatePayment(String paymentIntentId, String eventId, java.util.List<String> seats) {
-        String url = stripeServiceUrl + "/validate-payment";
+    private boolean confirmPayment(String paymentIntentId, String eventId, java.util.List<String> seats) {
+        String url = stripeServiceUrl + "/confirm-payment";
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("payment_intent_id", paymentIntentId);
@@ -229,8 +229,8 @@ public class BookingServiceImpl implements BookingService {
                 return true;
             }
             
-            log.info("Calling Stripe validation service at {}", url);
-            Map response = webClient.post()
+            log.info("Calling Stripe Confirmation service at {}", url);
+            Map response = webClient.patch()
                 .uri(url)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(requestBody)
@@ -238,9 +238,9 @@ public class BookingServiceImpl implements BookingService {
                 .bodyToMono(Map.class)
                 .block();
                 
-            log.info("Payment validation response: {}", response);
+            log.info("Payment confirmation response: {}", response);
             
-            if (response != null && response.containsKey("valid") && (Boolean) response.get("valid")) {
+            if (response != null && response.containsKey("status")) {
                 return true;
             }
             return false;

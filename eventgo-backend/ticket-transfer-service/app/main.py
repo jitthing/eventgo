@@ -239,9 +239,10 @@ async def generate_transfer_payment_link(request: schemas.TransferPaymentRequest
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/transfer")
+@app.patch("/transfer")
 async def transfer(request: schemas.TicketTransferRequest):
     """
+    Transfer ownership of ticket from owner to buyer
     """
     # Get the original payment_intent_id from ticket inventory service
     try:

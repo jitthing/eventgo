@@ -84,7 +84,7 @@ async def validate_payment(payment: schemas.PaymentValidationRequest):
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/confirm-booking", response_model=schemas.BookingConfirmationResponse)
+@app.patch("/confirm-payment", response_model=schemas.BookingConfirmationResponse)
 async def confirm_booking(payment: schemas.PaymentValidationRequest):
     """Finalize booking after successful payment validation"""
     try:
