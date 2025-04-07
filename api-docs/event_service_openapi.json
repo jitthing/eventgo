@@ -1,0 +1,336 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "EventsAPI",
+        "description": "",
+        "version": "1"
+    },
+    "basePath": "/EventsOutsystem/rest/EventsAPI",
+    "schemes": [
+        "https"
+    ],
+    "paths": {
+        "/clear": {
+            "post": {
+                "tags": [
+                    "EventsAPI"
+                ],
+                "description": "",
+                "operationId": "ClearAllEvents",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Result"
+                        }
+                    }
+                }
+            }
+        },
+        "/events": {
+            "post": {
+                "tags": [
+                    "EventsAPI"
+                ],
+                "description": "",
+                "operationId": "CreateEvent",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "EventDetails",
+                        "in": "body",
+                        "description": "",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/EventDetails"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Result"
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "EventsAPI"
+                ],
+                "description": "",
+                "operationId": "GetAllEvents",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/EventAPIListResultRecord"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{EventId}": {
+            "get": {
+                "tags": [
+                    "EventsAPI"
+                ],
+                "description": "",
+                "operationId": "GetEventByEventId",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "EventId",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "x-example": 0,
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/EventAPIResultRecord"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{EventId}/cancel": {
+            "patch": {
+                "tags": [
+                    "EventsAPI"
+                ],
+                "description": "",
+                "operationId": "CancelEvent",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "EventId",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "x-example": 0,
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CancelResult"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "CancelResult": {
+            "description": "",
+            "type": "object",
+            "properties": {
+                "Success": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "ErrorMessage": {
+                    "type": "string",
+                    "default": ""
+                },
+                "title": {
+                    "type": "string",
+                    "default": ""
+                },
+                "description": {
+                    "type": "string",
+                    "default": ""
+                },
+                "date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-12-31T23:59:59.938Z"
+                },
+                "venue": {
+                    "type": "string",
+                    "default": ""
+                }
+            },
+            "required": [
+                "title",
+                "date",
+                "venue"
+            ]
+        },
+        "EventAPI": {
+            "description": "",
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "default": ""
+                },
+                "description": {
+                    "type": "string",
+                    "default": ""
+                },
+                "date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-12-31T23:59:59.938Z"
+                },
+                "category": {
+                    "type": "string",
+                    "default": ""
+                },
+                "image_url": {
+                    "type": "string",
+                    "default": ""
+                },
+                "venue": {
+                    "type": "string",
+                    "default": ""
+                },
+                "is_featured": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "status": {
+                    "type": "string",
+                    "default": ""
+                },
+                "event_id": {
+                    "type": "integer",
+                    "example": 0,
+                    "format": "int32"
+                }
+            },
+            "required": [
+                "title",
+                "date",
+                "category",
+                "image_url",
+                "venue",
+                "is_featured",
+                "status"
+            ]
+        },
+        "EventAPIListResultRecord": {
+            "description": "",
+            "type": "object",
+            "properties": {
+                "EventAPI": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EventAPI"
+                    }
+                },
+                "Result": {
+                    "$ref": "#/definitions/Result"
+                }
+            }
+        },
+        "EventAPIResultRecord": {
+            "description": "",
+            "type": "object",
+            "properties": {
+                "EventAPI": {
+                    "$ref": "#/definitions/EventAPI"
+                },
+                "Result": {
+                    "$ref": "#/definitions/Result"
+                }
+            }
+        },
+        "EventDetails": {
+            "description": "",
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "default": ""
+                },
+                "description": {
+                    "type": "string",
+                    "default": ""
+                },
+                "date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2014-12-31T23:59:59.938Z"
+                },
+                "category": {
+                    "type": "string",
+                    "default": ""
+                },
+                "image_url": {
+                    "type": "string",
+                    "default": ""
+                },
+                "venue": {
+                    "type": "string",
+                    "default": ""
+                },
+                "is_featured": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "status": {
+                    "type": "string",
+                    "default": ""
+                }
+            },
+            "required": [
+                "title",
+                "date",
+                "category",
+                "image_url",
+                "venue",
+                "is_featured",
+                "status"
+            ]
+        },
+        "Result": {
+            "description": "",
+            "type": "object",
+            "properties": {
+                "Success": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "ErrorMessage": {
+                    "type": "string",
+                    "default": ""
+                },
+                "event_id": {
+                    "type": "integer",
+                    "example": 0,
+                    "format": "int32"
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "EventsAPI"
+        }
+    ]
+}
