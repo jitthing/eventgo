@@ -1,0 +1,801 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Stripe Service",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/create-payment-intent": {
+            "post": {
+                "summary": "Create Payment Intent",
+                "description": "Create a new PaymentIntent for the given amount, with seats and event upon checkout click.",
+                "operationId": "create_payment_intent_create_payment_intent_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentIntent"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentIntentResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/payment-status/{payment_intent_id}": {
+            "get": {
+                "summary": "Get Payment Status",
+                "description": "Get the status for a given PaymentIntent ID.",
+                "operationId": "get_payment_status_payment_status__payment_intent_id__get",
+                "parameters": [
+                    {
+                        "name": "payment_intent_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Payment Intent Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentStatusResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/validate-payment": {
+            "post": {
+                "summary": "Validate Payment",
+                "operationId": "validate_payment_validate_payment_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentValidationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentValidationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/confirm-booking": {
+            "post": {
+                "summary": "Confirm Booking",
+                "description": "Finalize booking after successful payment validation",
+                "operationId": "confirm_booking_confirm_booking_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentValidationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BookingConfirmationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/refund": {
+            "post": {
+                "summary": "Refund Booking",
+                "description": "Refund a payment intent. Payment intent must have a valid payment method to refund to.",
+                "operationId": "refund_booking_refund_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefundRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RefundResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "summary": "Get Health",
+                "operationId": "get_health_health_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HealthResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/create-payment-link": {
+            "post": {
+                "summary": "Create Payment Link",
+                "description": "Create a single payment link for a customer. Used for ticket transfer",
+                "operationId": "create_payment_link_create_payment_link_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreatePaymentLinkRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentLinkResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/create-split-payment": {
+            "post": {
+                "summary": "Create Split Payment",
+                "description": "Create payment links for multiple participants in a split payment scenario",
+                "operationId": "create_split_payment_create_split_payment_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateSplitPaymentRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SplitPaymentResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "BookingConfirmationResponse": {
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    },
+                    "event_id": {
+                        "type": "string",
+                        "title": "Event Id"
+                    },
+                    "seats": {
+                        "items": {},
+                        "type": "array",
+                        "title": "Seats"
+                    },
+                    "payment_intent_id": {
+                        "type": "string",
+                        "title": "Payment Intent Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "status",
+                    "event_id",
+                    "seats",
+                    "payment_intent_id"
+                ],
+                "title": "BookingConfirmationResponse"
+            },
+            "CreatePaymentLinkRequest": {
+                "properties": {
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency",
+                        "default": "sgd"
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description"
+                    },
+                    "email": {
+                        "type": "string",
+                        "title": "Email"
+                    },
+                    "redirect_url": {
+                        "type": "string",
+                        "title": "Redirect Url"
+                    },
+                    "event_id": {
+                        "type": "string",
+                        "title": "Event Id"
+                    },
+                    "seats": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Seats"
+                    },
+                    "metadata": {
+                        "title": "Metadata"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "amount",
+                    "description",
+                    "email",
+                    "redirect_url",
+                    "metadata"
+                ],
+                "title": "CreatePaymentLinkRequest"
+            },
+            "CreateSplitPaymentRequest": {
+                "properties": {
+                    "event_id": {
+                        "type": "integer",
+                        "title": "Event Id"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency",
+                        "default": "usd"
+                    },
+                    "reservation_id": {
+                        "type": "integer",
+                        "title": "Reservation Id"
+                    },
+                    "participants": {
+                        "items": {
+                            "$ref": "#/components/schemas/SplitPaymentParticipant"
+                        },
+                        "type": "array",
+                        "title": "Participants"
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "event_id",
+                    "reservation_id",
+                    "participants",
+                    "description"
+                ],
+                "title": "CreateSplitPaymentRequest"
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "HealthResponse": {
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    },
+                    "stripe_configured": {
+                        "type": "boolean",
+                        "title": "Stripe Configured"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "status",
+                    "stripe_configured"
+                ],
+                "title": "HealthResponse"
+            },
+            "PaymentIntent": {
+                "properties": {
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency",
+                        "default": "sgd"
+                    },
+                    "event_id": {
+                        "type": "string",
+                        "title": "Event Id"
+                    },
+                    "seats": {
+                        "items": {},
+                        "type": "array",
+                        "title": "Seats"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "amount",
+                    "event_id",
+                    "seats"
+                ],
+                "title": "PaymentIntent"
+            },
+            "PaymentIntentResponse": {
+                "properties": {
+                    "clientSecret": {
+                        "type": "string",
+                        "title": "Clientsecret"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "clientSecret"
+                ],
+                "title": "PaymentIntentResponse"
+            },
+            "PaymentLinkResponse": {
+                "properties": {
+                    "payment_link_id": {
+                        "type": "string",
+                        "title": "Payment Link Id"
+                    },
+                    "url": {
+                        "type": "string",
+                        "title": "Url"
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount"
+                    },
+                    "expires_at": {
+                        "type": "integer",
+                        "title": "Expires At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "payment_link_id",
+                    "url",
+                    "amount",
+                    "expires_at"
+                ],
+                "title": "PaymentLinkResponse"
+            },
+            "PaymentStatusResponse": {
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "title": "Metadata"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "status",
+                    "amount",
+                    "currency",
+                    "metadata"
+                ],
+                "title": "PaymentStatusResponse"
+            },
+            "PaymentValidationRequest": {
+                "properties": {
+                    "payment_intent_id": {
+                        "type": "string",
+                        "title": "Payment Intent Id"
+                    },
+                    "event_id": {
+                        "type": "string",
+                        "title": "Event Id"
+                    },
+                    "seats": {
+                        "items": {},
+                        "type": "array",
+                        "title": "Seats"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "payment_intent_id",
+                    "event_id",
+                    "seats"
+                ],
+                "title": "PaymentValidationRequest"
+            },
+            "PaymentValidationResponse": {
+                "properties": {
+                    "valid": {
+                        "type": "boolean",
+                        "title": "Valid"
+                    },
+                    "payment_status": {
+                        "type": "string",
+                        "title": "Payment Status"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "valid",
+                    "payment_status"
+                ],
+                "title": "PaymentValidationResponse"
+            },
+            "RefundRequest": {
+                "properties": {
+                    "payment_intent_id": {
+                        "type": "string",
+                        "title": "Payment Intent Id"
+                    },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Amount"
+                    },
+                    "reason": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Reason"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "payment_intent_id"
+                ],
+                "title": "RefundRequest"
+            },
+            "RefundResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "object": {
+                        "type": "string",
+                        "title": "Object"
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency"
+                    },
+                    "payment_intent": {
+                        "type": "string",
+                        "title": "Payment Intent"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "object",
+                    "amount",
+                    "currency",
+                    "payment_intent",
+                    "status"
+                ],
+                "title": "RefundResponse"
+            },
+            "SplitPaymentLinkResponse": {
+                "properties": {
+                    "payment_link_id": {
+                        "type": "string",
+                        "title": "Payment Link Id"
+                    },
+                    "url": {
+                        "type": "string",
+                        "title": "Url"
+                    },
+                    "user_id": {
+                        "type": "integer",
+                        "title": "User Id"
+                    },
+                    "participant_email": {
+                        "type": "string",
+                        "title": "Participant Email"
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount"
+                    },
+                    "expires_at": {
+                        "type": "integer",
+                        "title": "Expires At"
+                    },
+                    "ticket_id": {
+                        "type": "integer",
+                        "title": "Ticket Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "payment_link_id",
+                    "url",
+                    "user_id",
+                    "participant_email",
+                    "amount",
+                    "expires_at",
+                    "ticket_id"
+                ],
+                "title": "SplitPaymentLinkResponse"
+            },
+            "SplitPaymentParticipant": {
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "title": "Email"
+                    },
+                    "user_id": {
+                        "type": "integer",
+                        "title": "User Id"
+                    },
+                    "ticket_id": {
+                        "type": "integer",
+                        "title": "Ticket Id"
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount"
+                    },
+                    "redirect_url": {
+                        "type": "string",
+                        "title": "Redirect Url"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "email",
+                    "user_id",
+                    "ticket_id",
+                    "amount",
+                    "redirect_url"
+                ],
+                "title": "SplitPaymentParticipant"
+            },
+            "SplitPaymentResponse": {
+                "properties": {
+                    "split_payment_id": {
+                        "type": "string",
+                        "title": "Split Payment Id"
+                    },
+                    "payment_links": {
+                        "items": {
+                            "$ref": "#/components/schemas/SplitPaymentLinkResponse"
+                        },
+                        "type": "array",
+                        "title": "Payment Links"
+                    },
+                    "total_amount": {
+                        "type": "integer",
+                        "title": "Total Amount"
+                    },
+                    "event_id": {
+                        "type": "integer",
+                        "title": "Event Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "split_payment_id",
+                    "payment_links",
+                    "total_amount",
+                    "event_id"
+                ],
+                "title": "SplitPaymentResponse"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            }
+        }
+    }
+}
