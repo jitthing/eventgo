@@ -1,0 +1,309 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Ticket Transfer Service",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/generate-transfer-payment-link": {
+            "post": {
+                "summary": "Generate Transfer Payment Link",
+                "description": "Generate a payment link for ticket transfer.",
+                "operationId": "generate_transfer_payment_link_generate_transfer_payment_link_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TransferPaymentRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TransferPaymentResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/transfer": {
+            "post": {
+                "summary": "Transfer",
+                "operationId": "transfer_transfer_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TicketTransferRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "summary": "Get Health",
+                "operationId": "get_health_health_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HealthResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "HealthResponse": {
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "status"
+                ],
+                "title": "HealthResponse"
+            },
+            "TicketTransferRequest": {
+                "properties": {
+                    "new_payment_intent": {
+                        "type": "string",
+                        "title": "New Payment Intent"
+                    },
+                    "ticket_id": {
+                        "type": "string",
+                        "title": "Ticket Id"
+                    },
+                    "seller_id": {
+                        "type": "string",
+                        "title": "Seller Id"
+                    },
+                    "seller_email": {
+                        "type": "string",
+                        "title": "Seller Email"
+                    },
+                    "buyer_email": {
+                        "type": "string",
+                        "title": "Buyer Email"
+                    },
+                    "buyer_id": {
+                        "type": "string",
+                        "title": "Buyer Id"
+                    },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            }
+                        ],
+                        "title": "Amount"
+                    },
+                    "event_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "integer"
+                            }
+                        ],
+                        "title": "Event Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "new_payment_intent",
+                    "ticket_id",
+                    "seller_id",
+                    "seller_email",
+                    "buyer_email",
+                    "buyer_id",
+                    "amount",
+                    "event_id"
+                ],
+                "title": "TicketTransferRequest"
+            },
+            "TransferPaymentRequest": {
+                "properties": {
+                    "ticket_id": {
+                        "type": "integer",
+                        "title": "Ticket Id"
+                    },
+                    "seller_id": {
+                        "type": "integer",
+                        "title": "Seller Id"
+                    },
+                    "buyer_id": {
+                        "type": "integer",
+                        "title": "Buyer Id"
+                    },
+                    "seller_email": {
+                        "type": "string",
+                        "title": "Seller Email"
+                    },
+                    "buyer_email": {
+                        "type": "string",
+                        "title": "Buyer Email"
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description"
+                    },
+                    "redirect_url": {
+                        "type": "string",
+                        "title": "Redirect Url",
+                        "default": "http://localhost:3000"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "ticket_id",
+                    "seller_id",
+                    "buyer_id",
+                    "seller_email",
+                    "buyer_email"
+                ],
+                "title": "TransferPaymentRequest"
+            },
+            "TransferPaymentResponse": {
+                "properties": {
+                    "transfer_id": {
+                        "type": "string",
+                        "title": "Transfer Id"
+                    },
+                    "payment_link_id": {
+                        "type": "string",
+                        "title": "Payment Link Id"
+                    },
+                    "url": {
+                        "type": "string",
+                        "title": "Url"
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount"
+                    },
+                    "expires_at": {
+                        "type": "integer",
+                        "title": "Expires At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "transfer_id",
+                    "payment_link_id",
+                    "url",
+                    "amount",
+                    "expires_at"
+                ],
+                "title": "TransferPaymentResponse"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            }
+        }
+    }
+}
