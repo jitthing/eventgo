@@ -1,0 +1,1524 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "Ticket Inventory API",
+        "description": "API for managing event tickets: reservations, purchases, and transfers",
+        "contact": {
+            "name": "EventGo Team",
+            "email": "support@eventgo.com"
+        },
+        "version": "1.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8005",
+            "description": "Generated server url"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Ticket Management",
+            "description": "APIs for managing event tickets and reservations"
+        }
+    ],
+    "paths": {
+        "/tickets/reserve": {
+            "post": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Reserve seats",
+                "description": "Reserve multiple seats for an event. Seats will be held for 10 minutes. All seats must be available for the reservation to succeed.",
+                "operationId": "reserveSeat",
+                "requestBody": {
+                    "description": "Reservation details",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReserveTicketRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Seats successfully reserved",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReserveTicketResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/create": {
+            "post": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Create tickets",
+                "description": "Create tickets for an event",
+                "operationId": "createSeats",
+                "requestBody": {
+                    "description": "Event details",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTicketsRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Tickets created successfully",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CreateTicketsResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/{event_id}/cancel": {
+            "patch": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Cancel event tickets",
+                "description": "Cancel all reserved (unpaid) tickets for an event. Returns list of affected payment intents.",
+                "operationId": "cancelTicketsByEvent",
+                "parameters": [
+                    {
+                        "name": "event_id",
+                        "in": "path",
+                        "description": "ID of the event to cancel tickets for",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully canceled tickets",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CancelTicketsResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/update-preference": {
+            "patch": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Update ticket preference for split booking",
+                "description": "Updates on user preference whether they wish to keep their ticket upon failure of full party payment. Changes only the specified ticket preference to either keep or refund.",
+                "operationId": "updatePreference",
+                "requestBody": {
+                    "description": "Release details",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PreferenceRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Preference updated",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UpdatePreferenceResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/transfer": {
+            "patch": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Transfer ticket ownership",
+                "description": "Transfer a purchased ticket to another user. Only the current ticket owner can initiate the transfer.",
+                "operationId": "transferTicket",
+                "requestBody": {
+                    "description": "Transfer details including current and new owner information",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TransferTicketRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Ticket successfully transferred",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TransferTicketResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/release": {
+            "patch": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Release reserved seats",
+                "description": "Release previously reserved seats back to available status",
+                "operationId": "releaseSeat",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReleaseTicketRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Seats successfully released",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReleaseTicketResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid reservation ID",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReleaseTicketResponseError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/mark-transferring": {
+            "patch": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Mark ticket as transferring",
+                "description": "Mark a ticket as transferring",
+                "operationId": "markTicketTransferring",
+                "requestBody": {
+                    "description": "Ticket identifier",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MarkTransferringRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Ticket marked as transferring",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MarkTransferringResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/confirm": {
+            "patch": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Confirm ticket purchase",
+                "description": "Confirms a ticket reservation after successful payment. Changes ticket status from reserved to sold.",
+                "operationId": "confirmSeat",
+                "requestBody": {
+                    "description": "Confirmation details",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConfirmTicketRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Purchase successfully confirmed",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConfirmTicketResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid reservation or tickets no longer reserved",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConfirmTicketResponseError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/confirm-split": {
+            "patch": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Confirm ticket purchase for split booking",
+                "description": "Confirms a specific ticket reservation after successful payment. Changes only the specified ticket status from reserved to sold.",
+                "operationId": "confirmSeatSplitBooking",
+                "requestBody": {
+                    "description": "Confirmation details including specific ticket",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConfirmTicketSplitRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Purchase successfully confirmed",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConfirmTicketSplitRequestResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/cancel-ticket": {
+            "patch": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Cancel singular ticket on refund",
+                "description": "To cancel ticket(s) after party booking failed for those who choose for refund.",
+                "operationId": "cancelTicket",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CancelTicketRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successfully cancelled tickets",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CancelTicketResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/{event_id}": {
+            "get": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Get tickets by event",
+                "description": "Retrieves all tickets and their current status for a specific event. Includes availability, pricing, and category information.",
+                "operationId": "getTicketsByEvent",
+                "parameters": [
+                    {
+                        "name": "event_id",
+                        "in": "path",
+                        "description": "ID of the event to get tickets for",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "example": 1001
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved tickets",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TicketResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/user/{user_id}": {
+            "get": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Get tickets by user ID",
+                "description": "Retrieve tickets associated with a specific user",
+                "operationId": "getTicketsByUserId",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved tickets",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TicketDetailsResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/user/associated/{user_id}": {
+            "get": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Get all tickets associated with a user",
+                "description": "Retrieves all tickets where the given user is either the current owner or the previous owner.",
+                "operationId": "getTicketsForUser",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "description": "User ID to retrieve associated tickets",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "example": 2001
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved tickets",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TicketAssociatedUserResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/tickets-by-ids": {
+            "get": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Get tickets by ticket IDs",
+                "description": "Retrieve tickets by reservation ID",
+                "operationId": "getTicketsByIdList",
+                "parameters": [
+                    {
+                        "name": "ticketListRequest",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/TicketListRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "404": {
+                        "description": "Ticket not found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "Ticket found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/id/{ticket_id}": {
+            "get": {
+                "tags": [
+                    "Ticket Management"
+                ],
+                "summary": "Get ticket details",
+                "description": "Retrieve detailed information about a specific ticket, including payment data",
+                "operationId": "getTicketsById",
+                "parameters": [
+                    {
+                        "name": "ticket_id",
+                        "in": "path",
+                        "description": "ID of the ticket to retrieve",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "example": 137
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ticket found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GetTicketResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ReserveTicketRequest": {
+                "required": [
+                    "eventId",
+                    "seats",
+                    "userId"
+                ],
+                "type": "object",
+                "properties": {
+                    "eventId": {
+                        "type": "integer",
+                        "description": "ID of the event",
+                        "format": "int64",
+                        "example": 1001
+                    },
+                    "userId": {
+                        "type": "integer",
+                        "description": "ID of the user making the reservation",
+                        "format": "int64",
+                        "example": 2001
+                    },
+                    "seats": {
+                        "type": "array",
+                        "description": "List of seat numbers to reserve",
+                        "example": "['A1', 'A2', 'A3']",
+                        "items": {
+                            "type": "string",
+                            "description": "List of seat numbers to reserve",
+                            "example": "['A1', 'A2', 'A3']"
+                        }
+                    }
+                },
+                "description": "Request object for reserving tickets"
+            },
+            "ReserveTicketResponse": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the reservation",
+                        "example": "success"
+                    },
+                    "reservationId": {
+                        "type": "integer",
+                        "description": "Unique reservation identifier",
+                        "format": "int64",
+                        "example": 6240760612326
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "description": "When the reservation expires",
+                        "format": "date-time"
+                    },
+                    "seats": {
+                        "type": "array",
+                        "description": "List of reserved seat numbers",
+                        "items": {
+                            "type": "string",
+                            "description": "List of reserved seat numbers"
+                        }
+                    }
+                },
+                "description": "Response object for ticket reservation"
+            },
+            "CategoryPrice": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "description": "Category name",
+                        "example": "VIP"
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Price for the category",
+                        "format": "double",
+                        "example": 100.0
+                    }
+                },
+                "description": "Price information for a ticket category"
+            },
+            "CreateTicketsRequest": {
+                "type": "object",
+                "properties": {
+                    "events": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EventSeats"
+                        }
+                    },
+                    "categoryPrices": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CategoryPrice"
+                        }
+                    }
+                },
+                "description": "Request for creating tickets with events and category prices"
+            },
+            "EventSeats": {
+                "type": "object",
+                "properties": {
+                    "eventId": {
+                        "type": "integer",
+                        "description": "ID of the event",
+                        "format": "int64",
+                        "example": 7
+                    },
+                    "seats": {
+                        "type": "array",
+                        "description": "List of seats for the event",
+                        "items": {
+                            "$ref": "#/components/schemas/SeatInfo"
+                        }
+                    }
+                },
+                "description": "Event with its associated seats"
+            },
+            "SeatInfo": {
+                "type": "object",
+                "properties": {
+                    "ticketId": {
+                        "type": "integer",
+                        "description": "ID of the ticket",
+                        "format": "int64",
+                        "example": 406
+                    },
+                    "seatNumber": {
+                        "type": "string",
+                        "description": "Seat number",
+                        "example": "A1"
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Category of the seat",
+                        "example": "standard"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the seat",
+                        "example": "available"
+                    }
+                },
+                "description": "Information about a specific seat"
+            },
+            "CreateTicketsResponse": {
+                "required": [
+                    "data",
+                    "message",
+                    "status"
+                ],
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the creation operation",
+                        "example": "success"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Response message",
+                        "example": "Created 3 tickets"
+                    },
+                    "data": {
+                        "type": "array",
+                        "description": "List of created tickets",
+                        "items": {
+                            "$ref": "#/components/schemas/TicketData"
+                        }
+                    }
+                },
+                "description": "Response object for ticket creation"
+            },
+            "TicketData": {
+                "type": "object",
+                "properties": {
+                    "eventId": {
+                        "type": "integer",
+                        "description": "Event ID",
+                        "format": "int64",
+                        "example": 7
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Ticket price",
+                        "format": "double",
+                        "example": 50.0
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Ticket category",
+                        "example": "standard"
+                    },
+                    "ticketId": {
+                        "type": "integer",
+                        "description": "Ticket ID",
+                        "format": "int64",
+                        "example": 119
+                    },
+                    "seatNumber": {
+                        "type": "string",
+                        "description": "Seat number",
+                        "example": "A1"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Ticket status",
+                        "example": "available"
+                    }
+                },
+                "description": "List of created tickets"
+            },
+            "CancelTicketsResponse": {
+                "required": [
+                    "cancellations",
+                    "message",
+                    "status"
+                ],
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the operation",
+                        "example": "success"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Response message",
+                        "example": "Successfully canceled 5 sold tickets for event ID: 8"
+                    },
+                    "cancellations": {
+                        "type": "array",
+                        "description": "List of canceled ticket information",
+                        "items": {
+                            "$ref": "#/components/schemas/CancelledTicket"
+                        }
+                    }
+                },
+                "description": "Response object for ticket cancellation"
+            },
+            "CancelledTicket": {
+                "required": [
+                    "event_id",
+                    "payment_intent_id",
+                    "previous_status"
+                ],
+                "type": "object",
+                "properties": {
+                    "previous_status": {
+                        "type": "string",
+                        "description": "Status of ticket before cancellation",
+                        "example": "sold"
+                    },
+                    "event_id": {
+                        "type": "integer",
+                        "description": "Event ID",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "payment_intent_id": {
+                        "type": "string",
+                        "description": "payment_intent_id",
+                        "example": "pi_1234567890"
+                    },
+                    "ticketId": {
+                        "type": "integer",
+                        "description": "ID of the canceled ticket",
+                        "format": "int64",
+                        "example": 101
+                    },
+                    "seat": {
+                        "type": "string",
+                        "description": "Seat label",
+                        "example": "A5"
+                    },
+                    "user_id": {
+                        "type": "integer",
+                        "description": "User ID",
+                        "format": "int64",
+                        "example": 123
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Price of ticket",
+                        "format": "double",
+                        "example": 100.0
+                    }
+                },
+                "description": "Information about each canceled ticket"
+            },
+            "PreferenceRequest": {
+                "required": [
+                    "preference",
+                    "ticketId"
+                ],
+                "type": "object",
+                "properties": {
+                    "ticketId": {
+                        "type": "integer",
+                        "description": "ID of the ticket to update preference",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "preference": {
+                        "type": "string",
+                        "description": "Preference to update",
+                        "example": "keep"
+                    }
+                },
+                "description": "Request object for updating ticket preference"
+            },
+            "UpdatePreferenceResponse": {
+                "required": [
+                    "message",
+                    "status"
+                ],
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the operation",
+                        "example": "success"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Response message",
+                        "example": "Preference updated successfully"
+                    }
+                },
+                "description": "Response object for updating ticket preference"
+            },
+            "TransferTicketRequest": {
+                "required": [
+                    "current_user_id",
+                    "new_user_id",
+                    "ticket_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "ticket_id": {
+                        "type": "integer",
+                        "description": "ID of the ticket to transfer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "current_user_id": {
+                        "type": "integer",
+                        "description": "ID of the current ticket owner",
+                        "format": "int64",
+                        "example": 1001
+                    },
+                    "new_user_id": {
+                        "type": "integer",
+                        "description": "ID of the new ticket owner",
+                        "format": "int64",
+                        "example": 3001
+                    }
+                },
+                "description": "Request object for transferring a ticket"
+            },
+            "TransferTicketResponse": {
+                "required": [
+                    "message",
+                    "new_user_id",
+                    "status",
+                    "ticket_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the operation",
+                        "example": "success"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Response message",
+                        "example": "Ticket successfully transferred"
+                    },
+                    "ticket_id": {
+                        "type": "integer",
+                        "description": "ID of the transferred ticket",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "new_user_id": {
+                        "type": "integer",
+                        "description": "ID of the new ticket owner",
+                        "format": "int64",
+                        "example": 3001
+                    }
+                },
+                "description": "Response object for ticket transfer"
+            },
+            "ReleaseTicketRequest": {
+                "required": [
+                    "reservation_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "reservation_id": {
+                        "type": "integer",
+                        "description": "Reservation ID to release",
+                        "format": "int64",
+                        "example": 6240760612326
+                    }
+                },
+                "description": "Request object for releasing reserved tickets"
+            },
+            "ReleaseTicketResponse": {
+                "required": [
+                    "message",
+                    "status"
+                ],
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the release operation",
+                        "example": "success",
+                        "enum": [
+                            "success",
+                            "failure"
+                        ]
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Message describing the result of the operation",
+                        "example": "All seats released successfully"
+                    }
+                },
+                "description": "Response object for ticket release operation"
+            },
+            "ReleaseTicketResponseError": {
+                "required": [
+                    "message",
+                    "status"
+                ],
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the operation",
+                        "example": "failure"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Detailed error message",
+                        "example": "Invalid reservation ID or no reserved tickets found"
+                    }
+                },
+                "description": "Response object for ticket release operation"
+            },
+            "MarkTransferringRequest": {
+                "required": [
+                    "ticket_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "ticket_id": {
+                        "type": "integer",
+                        "description": "ID of the ticket to mark as transferring",
+                        "format": "int64",
+                        "example": 123
+                    }
+                },
+                "description": "Request object for marking ticket as transferring"
+            },
+            "MarkTransferringResponse": {
+                "required": [
+                    "message",
+                    "status",
+                    "ticket_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the operation",
+                        "example": "success"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Response message",
+                        "example": "Ticket marked as transferring"
+                    },
+                    "ticket_id": {
+                        "type": "integer",
+                        "description": "ID of the ticket marked as transferring",
+                        "format": "int64",
+                        "example": 123
+                    }
+                },
+                "description": "Response object for marking ticket as transferring"
+            },
+            "ConfirmTicketRequest": {
+                "required": [
+                    "paymentIntentId",
+                    "reservationId",
+                    "userId"
+                ],
+                "type": "object",
+                "properties": {
+                    "reservationId": {
+                        "type": "integer",
+                        "description": "Reservation ID to confirm",
+                        "format": "int64",
+                        "example": 6240760612326
+                    },
+                    "userId": {
+                        "type": "integer",
+                        "description": "User ID making the purchase",
+                        "format": "int64",
+                        "example": 2001
+                    },
+                    "paymentIntentId": {
+                        "type": "string",
+                        "description": "Payment intent ID from Stripe",
+                        "example": "pi_3Oy4Xd2eZvKYlo2C1gkTHPaK"
+                    }
+                },
+                "description": "Request object for confirming ticket purchase"
+            },
+            "ConfirmTicketResponse": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the operation",
+                        "example": "success"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Response message",
+                        "example": "Purchase successfully confirmed"
+                    }
+                },
+                "description": "Response object for ticket confirmation"
+            },
+            "ConfirmTicketResponseError": {
+                "required": [
+                    "message",
+                    "status"
+                ],
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the operation",
+                        "example": "error"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Response message",
+                        "example": "Invalid reservation ID or no reserved tickets found"
+                    }
+                },
+                "description": "Response object for ticket confirmation"
+            },
+            "ConfirmTicketSplitRequest": {
+                "required": [
+                    "paymentIntentId",
+                    "reservationId",
+                    "ticketId",
+                    "userId"
+                ],
+                "type": "object",
+                "properties": {
+                    "reservationId": {
+                        "type": "integer",
+                        "description": "ID of the reservation to confirm",
+                        "format": "int64",
+                        "example": 6240760612326
+                    },
+                    "userId": {
+                        "type": "integer",
+                        "description": "ID of the user to confirm",
+                        "format": "int64",
+                        "example": 1001
+                    },
+                    "paymentIntentId": {
+                        "type": "string",
+                        "description": "Payment intent ID",
+                        "example": "pi_3Oy4Xd2eZvKYlo2C1gkTHPaK"
+                    },
+                    "ticketId": {
+                        "type": "integer",
+                        "description": "ID of the ticket to confirm",
+                        "format": "int64",
+                        "example": 1
+                    }
+                },
+                "description": "Request object for confirming ticket split"
+            },
+            "ConfirmTicketSplitRequestResponse": {
+                "required": [
+                    "message",
+                    "status"
+                ],
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the operation",
+                        "example": "success"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Response message",
+                        "example": "Ticket purchase confirmed for user ID: 1001"
+                    }
+                },
+                "description": "Response object for confirming ticket split"
+            },
+            "CancelTicketRequest": {
+                "type": "object",
+                "properties": {
+                    "ticketList": {
+                        "type": "array",
+                        "description": "List of ticket IDs to cancel",
+                        "example": [
+                            1,
+                            2,
+                            3
+                        ],
+                        "items": {
+                            "type": "integer",
+                            "description": "List of ticket IDs to cancel",
+                            "format": "int64"
+                        }
+                    }
+                },
+                "description": "Request for canceling tickets"
+            },
+            "CancelTicketResponse": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "description": "List containing single ticket details",
+                        "example": [
+                            {
+                                "ticketId": 137,
+                                "eventId": 24,
+                                "seatNumber": "A2",
+                                "status": "sold",
+                                "category": "standard",
+                                "reservationExpires": null,
+                                "reservationId": null,
+                                "userId": 0,
+                                "price": 50.0,
+                                "paymentIntentId": "string",
+                                "preference": null,
+                                "previousOwnerUserId": null
+                            }
+                        ],
+                        "items": {
+                            "$ref": "#/components/schemas/TicketDetail"
+                        }
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the operation",
+                        "example": "success"
+                    }
+                },
+                "description": "Response for single ticket lookup"
+            },
+            "TicketDetail": {
+                "type": "object",
+                "properties": {
+                    "ticketId": {
+                        "type": "integer",
+                        "description": "Unique identifier for the ticket",
+                        "format": "int64",
+                        "example": 137
+                    },
+                    "eventId": {
+                        "type": "integer",
+                        "description": "ID of the event this ticket is for",
+                        "format": "int64",
+                        "example": 24
+                    },
+                    "seatNumber": {
+                        "type": "string",
+                        "description": "Seat number",
+                        "example": "A2"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Current status of the ticket",
+                        "example": "sold"
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Ticket category",
+                        "example": "standard"
+                    },
+                    "reservationExpires": {
+                        "type": "string",
+                        "description": "Expiration time of reservation",
+                        "example": "null"
+                    },
+                    "reservationId": {
+                        "type": "string",
+                        "description": "Reservation identifier",
+                        "example": "null"
+                    },
+                    "userId": {
+                        "type": "integer",
+                        "description": "Current user ID",
+                        "format": "int64",
+                        "example": 0
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Ticket price",
+                        "format": "double",
+                        "example": 50.0
+                    },
+                    "paymentIntentId": {
+                        "type": "string",
+                        "description": "Payment intent identifier",
+                        "example": "string"
+                    },
+                    "preference": {
+                        "type": "string",
+                        "description": "User's preference for split booking",
+                        "example": "null"
+                    },
+                    "previousOwnerUserId": {
+                        "type": "integer",
+                        "description": "Previous owner's user ID",
+                        "format": "int64"
+                    }
+                },
+                "description": "List containing single ticket details",
+                "example": [
+                    {
+                        "ticketId": 137,
+                        "eventId": 24,
+                        "seatNumber": "A2",
+                        "status": "sold",
+                        "category": "standard",
+                        "reservationExpires": null,
+                        "reservationId": null,
+                        "userId": 0,
+                        "price": 50.0,
+                        "paymentIntentId": "string",
+                        "preference": null,
+                        "previousOwnerUserId": null
+                    }
+                ]
+            },
+            "TicketResponse": {
+                "type": "object",
+                "properties": {
+                    "eventId": {
+                        "type": "integer",
+                        "description": "Event identifier",
+                        "format": "int64",
+                        "example": 1775
+                    },
+                    "tickets": {
+                        "type": "array",
+                        "description": "List of tickets with their details",
+                        "example": [
+                            {
+                                "ticket_id": 108,
+                                "seat_number": "A1",
+                                "status": "available",
+                                "category": "standard",
+                                "price": 210.0
+                            }
+                        ],
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "object",
+                                "description": "List of tickets with their details",
+                                "example": [
+                                    {
+                                        "ticket_id": 108,
+                                        "seat_number": "A1",
+                                        "status": "available",
+                                        "category": "standard",
+                                        "price": 210.0
+                                    }
+                                ]
+                            },
+                            "description": "List of tickets with their details",
+                            "example": [
+                                {
+                                    "ticket_id": 108,
+                                    "seat_number": "A1",
+                                    "status": "available",
+                                    "category": "standard",
+                                    "price": 210.0
+                                }
+                            ]
+                        }
+                    },
+                    "totalCount": {
+                        "type": "integer",
+                        "description": "Total number of tickets for this event",
+                        "format": "int32",
+                        "example": 100
+                    },
+                    "statusCounts": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer",
+                            "description": "Count of tickets grouped by their status",
+                            "format": "int64"
+                        },
+                        "description": "Count of tickets grouped by their status",
+                        "example": {
+                            "available": 80,
+                            "sold": 15,
+                            "reserved": 5
+                        }
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Base ticket price in SGD",
+                        "format": "double",
+                        "example": 210.0
+                    }
+                },
+                "description": "Response object containing ticket information and statistics for an event",
+                "example": {
+                    "eventId": 1775,
+                    "tickets": [
+                        {
+                            "ticket_id": 108,
+                            "seat_number": "A1",
+                            "status": "available",
+                            "category": "standard",
+                            "price": 210.0
+                        }
+                    ],
+                    "totalCount": 100,
+                    "statusCounts": {
+                        "available": 80,
+                        "sold": 15,
+                        "reserved": 5
+                    },
+                    "price": 210.0
+                }
+            },
+            "TicketDetailsResponse": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "description": "List of ticket details",
+                        "items": {
+                            "$ref": "#/components/schemas/TicketDetail"
+                        }
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the operation",
+                        "example": "success"
+                    }
+                },
+                "description": "Response object containing ticket details"
+            },
+            "TicketAssociatedUserResponse": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "description": "List of ticket details",
+                        "example": [
+                            {
+                                "eventId": 1,
+                                "previousOwner": 1001,
+                                "price": 100.0,
+                                "currentOwner": 1002,
+                                "category": "standard",
+                                "ticketId": 1,
+                                "seatNumber": "A1",
+                                "status": "sold"
+                            }
+                        ],
+                        "items": {
+                            "$ref": "#/components/schemas/TicketDetails"
+                        }
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the operation",
+                        "example": "success"
+                    }
+                },
+                "description": "Response object for ticket associated user"
+            },
+            "TicketDetails": {
+                "type": "object",
+                "description": "List of ticket details",
+                "example": [
+                    {
+                        "eventId": 1,
+                        "previousOwner": 1001,
+                        "price": 100.0,
+                        "currentOwner": 1002,
+                        "category": "standard",
+                        "ticketId": 1,
+                        "seatNumber": "A1",
+                        "status": "sold"
+                    }
+                ]
+            },
+            "TicketListRequest": {
+                "type": "object",
+                "properties": {
+                    "ticketList": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                }
+            },
+            "GetTicketResponse": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "description": "List containing single ticket details",
+                        "example": [
+                            {
+                                "ticketId": 137,
+                                "eventId": 24,
+                                "seatNumber": "A2",
+                                "status": "sold",
+                                "category": "standard",
+                                "reservationExpires": null,
+                                "reservationId": null,
+                                "userId": 0,
+                                "price": 50.0,
+                                "paymentIntentId": "string",
+                                "preference": null,
+                                "previousOwnerUserId": null
+                            }
+                        ],
+                        "items": {
+                            "$ref": "#/components/schemas/TicketDetail"
+                        }
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Status of the operation",
+                        "example": "success"
+                    }
+                },
+                "description": "Response for single ticket lookup"
+            }
+        }
+    }
+}
