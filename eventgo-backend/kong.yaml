@@ -46,13 +46,13 @@ services:
   #      strip_path: true
         
 
-  #- name: party-booking-service
-  #  url: http://host.docker.internal:8010
-  #  routes:
-  #    - name: split-booking-route
-  #     paths:
-  #        - /split
-  #      strip_path: true
+  - name: party-booking-service
+    url: http://host.docker.internal:8010
+    routes:
+      - name: split-booking-route
+        paths:
+        - /split
+        strip_path: true
 
   - name: events-service
     url: https://personal-vyyhsf3d.outsystemscloud.com/EventsOutsystem/rest/EventsAPI
