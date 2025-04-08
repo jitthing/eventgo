@@ -12,4 +12,3 @@ spring.rabbitmq.port=${SPRING_RABBITMQ_PORT}
 spring.rabbitmq.username=${SPRING_RABBITMQ_USERNAME}
 spring.rabbitmq.password=${SPRING_RABBITMQ_PASSWORD}
 
-management.endpoints.web.exposure.include=health
