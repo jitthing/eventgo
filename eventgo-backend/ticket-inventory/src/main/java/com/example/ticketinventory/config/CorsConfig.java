@@ -14,11 +14,20 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:3000")  // Allow frontend
+                        .allowedOrigins("*")
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-                        .allowedHeaders("*")
-                        .allowCredentials(true); // Allow cookies/auth headers if needed
+                        .allowedHeaders("*");
+                        // Don't set allowCredentials(true)
             }
+
+            // @Override
+            // public void addCorsMappings(CorsRegistry registry) {
+            //     registry.addMapping("/**")
+            //             .allowedOrigins("*")  // Allow frontend
+            //             .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+            //             .allowedHeaders("*")
+            //             .allowCredentials(true); // Allow cookies/auth headers if needed
+            // }
         };
     }
 }
