@@ -544,7 +544,7 @@ function GroupBookingModal({
       };
 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_TICKET_SPLIT_API_URL}/split/party-booking`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_TICKET_SPLIT_API_URL}/party-booking`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(send),
