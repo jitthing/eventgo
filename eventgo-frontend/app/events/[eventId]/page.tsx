@@ -278,8 +278,7 @@ export default function EventPage() {
                       }),
                     };
 
-                    const ticketReservation = await fetch(
-                      "http://localhost:8005/tickets/reserve",
+                    const ticketReservation = await fetch(`${process.env.NEXT_PUBLIC_TICKETS_API_URL}/tickets/reserve`,
                       {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -514,8 +513,7 @@ function GroupBookingModal({
         seats: selectedSeats.map((id) => seatNumbersMap[id]),
       };
 
-      const ticketReservation = await fetch(
-        "http://localhost:8005/tickets/reserve",
+      const ticketReservation =await fetch(`${process.env.NEXT_PUBLIC_TICKETS_API_URL}/tickets/reserve`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -546,7 +544,7 @@ function GroupBookingModal({
       };
 
       try {
-        const response = await fetch("http://localhost:8010/party-booking", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_TICKET_SPLIT_API_URL}/split/party-booking`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(send),

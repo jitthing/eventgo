@@ -148,11 +148,7 @@ function PaymentForm({
 
         // // Then call process-booking endpoint in Booking service
         // console.log(userEmail);
-        const processBookingResponse = await fetch(
-          `${
-            process.env.NEXT_PUBLIC_BOOKING_SERVICE_API_URL ||
-            "http://localhost:8007"
-          }/bookings/process-booking`,
+        const processBookingResponse = await fetch(`${process.env.NEXT_PUBLIC_BOOKING_SERVICE_API_URL}/bookings/process-booking`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
