@@ -16,7 +16,7 @@ public class CorsConfig {
         configuration.setAllowedOrigins(List.of("*")); // ✅ React app
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true); // Only if you're using cookies/JWT with credentials
+        // configuration.setAllowCredentials(true); // Only if you're using cookies/JWT with credentials
     
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
