@@ -494,7 +494,7 @@ async def party_booking(request: schemas.PartyBookingRequest, background_tasks: 
                                 
                 print(f"Published payment link for {payment_link_obj.get('participant_email')} to notification queue")
 
-        background_tasks.add_task(refund_split, ticket_ids, 60)
+        background_tasks.add_task(refund_split, ticket_ids, 75)
         return {"status": "ok", "data": res}
     except requests.exceptions.RequestException as e:
         print(f"Connection error: {str(e)}")
