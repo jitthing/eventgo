@@ -4,12 +4,12 @@ Ever feel tired of ticketmasters downtime and poor queue management? Fear not, b
 
 EventGo's Key Features:
 
--   Ticket Transfer
-    -   Never get scammed again! Transfer your tickets worry free between users on EventGo, where we manage the payments for you. Tickets are only transferred when the buyer pays successfully!
--   Split Payment ↔️
-    -   Buying for your friends? EventGo offers seamless split payment methods, so you never have to worry if you have enough money to cover the whole group!
--   Managed Event Cancellation ❌
-    -   Remeber when Justin Bieber cancelled his tour.. EventGo maanges these events fuss free, ensuring that ticket holders are kept in the loop and promptly refunded.
+- Ticket Transfer
+  - Never get scammed again! Transfer your tickets worry free between users on EventGo, where we manage the payments for you. Tickets are only transferred when the buyer pays successfully!
+- Split Payment ↔️
+  - Buying for your friends? EventGo offers seamless split payment methods, so you never have to worry if you have enough money to cover the whole group!
+- Managed Event Cancellation ❌
+  - Remeber when Justin Bieber cancelled his tour.. EventGo maanges these events fuss free, ensuring that ticket holders are kept in the loop and promptly refunded.
 
 # Setup
 
@@ -75,6 +75,15 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=********
 ```
 npm run dev
 ```
+
+## User Credentials:
+
+To test our functionalities, you can log in with the following credentials:
+
+1. "email": "admin@eventgo.com", "password": "admin", "role": "admin",
+2. "email": "user1@example.com", "password": "password", "role": "user",
+3. "email": "user2@example.com", "password": "password", "role": "user",
+4. "email": "user3@example.com", "password": "password", "role": "user",
 
 ## EventGo - Scenario Overview Table
 
