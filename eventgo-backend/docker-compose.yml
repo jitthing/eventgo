@@ -274,6 +274,33 @@ services:
       - stripe-service
       - ticket-inventory
       - ticket-transfer-service
+
+  # # --------------------------------------------------------------------------
+  # # FRONTEND APPLICATION
+  # # --------------------------------------------------------------------------
+  # frontend:
+  #   container_name: eventgo-frontend
+  #   build:
+  #     context: ../eventgo-frontend
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ../eventgo-frontend:/app
+  #     - /app/node_modules
+  #   networks:
+  #     - app_network
+  #   healthcheck:
+  #     test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   restart: always
+  #   environment:
+  #     - NODE_ENV=development
+  #     - NEXT_PUBLIC_API_URL=http://localhost:8000
+  #   depends_on:
+  #     - kong
+
 volumes:
   auth-db-data:
   ticket-inventory-data:
